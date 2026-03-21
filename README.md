@@ -1,4 +1,4 @@
-# SuperFlow
+# superflow
 
 **v1.1.0** · A Claude Code skill for autonomous product-to-production development.
 
@@ -6,7 +6,7 @@ Combines collaborative product discovery with fully autonomous execution — you
 
 ## The Idea
 
-Most AI coding workflows are either too hands-on (you babysit every step) or too hands-off (agent builds the wrong thing). SuperFlow splits the work into two phases:
+Most AI coding workflows are either too hands-on (you babysit every step) or too hands-off (agent builds the wrong thing). superflow splits the work into two phases:
 
 **Phase 1 — You talk, agent listens and proposes.** Freeflow product conversation with research, expert lenses, and proactive suggestions. The agent doesn't just ask questions — it proposes ideas, challenges assumptions, and brings best practices from the domain. This phase takes time, and that's intentional.
 
@@ -106,6 +106,17 @@ For each Sprint:
 5. **Proactive product thinking** — propose ideas, don't just ask questions
 6. **No claims without evidence** — verification output required for every completion
 
+## Safety Warning
+
+superflow runs in fully autonomous mode during Phase 2 — it creates branches, writes code, commits, and pushes without asking. **Run it in an isolated environment:**
+
+- **Docker container** or **VPS** — recommended for production repos
+- **Git worktrees** — superflow uses worktrees by default, which provides some isolation
+- **Disposable branch** — always works on feature branches, never commits to main directly
+- **Review before merge** — PRs are created but never auto-merged; you review and merge manually
+
+The skill uses `mode: bypassPermissions` for subagents and Codex runs with `--full-auto`. Make sure you're comfortable with autonomous code execution before running.
+
 ## Install
 
 ```bash
@@ -124,6 +135,7 @@ cp superflow/prompts/*.md ~/.claude/skills/superflow/prompts/
 - **Claude Code CLI** — the host environment
 - **Codex CLI** (optional but recommended) — `npm install -g @openai/codex` + `OPENAI_API_KEY` env var. Enables dual-provider reviews. Without it, reviews are Claude-only
 - **GitHub CLI** (`gh`) — for PR creation
+- **macOS users**: `brew install coreutils` — provides `gtimeout` for Codex timeout management
 
 ## Files
 
@@ -138,9 +150,9 @@ cp superflow/prompts/*.md ~/.claude/skills/superflow/prompts/
 
 ## Relationship with Superpowers
 
-SuperFlow is built on top of [Superpowers](https://github.com/obra/superpowers) — a community-built Claude Code skill framework ([info](https://claude.com/plugins/superpowers)).
+superflow is built on top of [Superpowers](https://github.com/obra/superpowers) — a community-built Claude Code skill framework ([info](https://claude.com/plugins/superpowers)).
 
-### What SuperFlow inherits from Superpowers
+### What superflow inherits from Superpowers
 - TDD cycle (Red-Green-Refactor)
 - Verification discipline ("evidence before claims")
 - Systematic debugging (investigate → hypothesis → fix)
@@ -150,7 +162,7 @@ SuperFlow is built on top of [Superpowers](https://github.com/obra/superpowers) 
 - Two-stage review pipeline (spec → code quality)
 - Implementer status codes and prompt patterns
 
-### What SuperFlow adds
+### What superflow adds
 - **Two-phase architecture** — collaborative discovery, then fully autonomous execution
 - **Context drift prevention** — checkpoint re-reads, self-check questions, sprint checklists
 - **Dual-model reviews** — Claude + Codex in parallel ("two models catch more bugs than one")
@@ -161,7 +173,7 @@ SuperFlow is built on top of [Superpowers](https://github.com/obra/superpowers) 
 - **Zero-pause autonomous execution** — never stops after plan approval
 
 ### Key philosophy difference
-Superpowers is a **composable toolkit** of 14 independent skills with human-in-the-loop at every stage. SuperFlow is a **monolithic autonomous workflow** that uses Superpowers patterns as building blocks but wraps them in a rigid two-phase pipeline where the human is involved only in Phase 1 (discovery) and completely excluded from Phase 2 (execution).
+Superpowers is a **composable toolkit** of 14 independent skills with human-in-the-loop at every stage. superflow is a **monolithic autonomous workflow** that uses Superpowers patterns as building blocks but wraps them in a rigid two-phase pipeline where the human is involved only in Phase 1 (discovery) and completely excluded from Phase 2 (execution).
 
 ## Origin
 
