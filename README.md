@@ -1,6 +1,8 @@
 # SuperFlow
 
-A Claude Code skill for autonomous product-to-production development. Combines collaborative product discovery with fully autonomous execution — you discuss what to build, then the agent builds it end-to-end without stopping.
+**v1.1.0** · A Claude Code skill for autonomous product-to-production development.
+
+Combines collaborative product discovery with fully autonomous execution — you discuss what to build, then the agent builds it end-to-end without stopping.
 
 ## The Idea
 
@@ -134,19 +136,32 @@ cp superflow/prompts/*.md ~/.claude/skills/superflow/prompts/
 | `prompts/product-reviewer.md` | Product acceptance reviewer + Codex template |
 | `prompts/testing-guidelines.md` | Testing anti-patterns and best practices reference |
 
-## Acknowledgements
+## Relationship with Superpowers
 
-SuperFlow is built on top of [Superpowers](https://github.com/obra/superpowers) — a community-built Claude Code skill framework ([info](https://claude.com/plugins/superpowers)). Many core patterns come directly from Superpowers:
+SuperFlow is built on top of [Superpowers](https://github.com/obra/superpowers) — a community-built Claude Code skill framework ([info](https://claude.com/plugins/superpowers)).
 
-- **Brainstorming flow** (question-driven design exploration)
-- **Subagent-driven development** (fresh agent per task + review stages)
-- **Test-driven development** (Red-Green-Refactor cycle)
-- **Verification discipline** ("evidence before claims" iron law)
-- **Git worktrees** (sprint isolation)
-- **Systematic debugging** (root cause before fix)
-- **Plan document structure** (bite-sized tasks, TDD steps)
+### What SuperFlow inherits from Superpowers
+- TDD cycle (Red-Green-Refactor)
+- Verification discipline ("evidence before claims")
+- Systematic debugging (investigate → hypothesis → fix)
+- Git worktrees for isolation
+- Bite-sized task decomposition (2-5 min per step)
+- Subagent context isolation
+- Two-stage review pipeline (spec → code quality)
+- Implementer status codes and prompt patterns
 
-SuperFlow extends and overrides Superpowers with: autonomous execution (zero pauses), PR-per-sprint, Codex dual-provider reviews, product acceptance gates, best practices research, proactive product suggestions, and context drift prevention.
+### What SuperFlow adds
+- **Two-phase architecture** — collaborative discovery, then fully autonomous execution
+- **Context drift prevention** — checkpoint re-reads, self-check questions, sprint checklists
+- **Dual-model reviews** — Claude + Codex in parallel ("two models catch more bugs than one")
+- **Product Acceptance Review** — 3rd review stage verifying spec *intent*, not just code quality
+- **PR per sprint** — smaller, reviewable, independently deployable PRs
+- **Best practices research** — parallel research agents before brainstorming
+- **Proactive product thinking** — agent proposes ideas, doesn't just ask questions
+- **Zero-pause autonomous execution** — never stops after plan approval
+
+### Key philosophy difference
+Superpowers is a **composable toolkit** of 14 independent skills with human-in-the-loop at every stage. SuperFlow is a **monolithic autonomous workflow** that uses Superpowers patterns as building blocks but wraps them in a rigid two-phase pipeline where the human is involved only in Phase 1 (discovery) and completely excluded from Phase 2 (execution).
 
 ## Origin
 
