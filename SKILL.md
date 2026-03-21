@@ -26,8 +26,8 @@ Phase 2: AUTONOMOUS (no stops until done)
 ### Rule 1: NEVER pause during autonomous execution
 After user says "go" / "ок" / "давай" on the approved plan — ZERO stops, ZERO questions, ZERO "should I continue?". Execute all sprints, create all PRs, report when fully done.
 
-### Rule 2: ALWAYS use Codex for reviews
-Every spec review, every plan review, every code quality review MUST include Codex in parallel with Claude. This is not optional. If Codex is unavailable, note it and proceed with Claude-only, but always TRY Codex first.
+### Rule 2: Use Codex when available
+At startup, detect if Codex CLI is installed. If yes — use it for all parallel reviews (spec, plan, code quality, product acceptance). If not — proceed with Claude-only, no warnings. Codex is a bonus for dual-provider coverage, not a hard requirement.
 
 ### Rule 3: PR per sprint
 Each sprint/logical chunk = separate git branch + PR. Never accumulate 20 commits in one PR. Smaller PRs are easier to review, safer to merge, and can be deployed independently.
@@ -422,12 +422,23 @@ Key rules:
 - Always `git diff` after Codex implementations to verify scope
 - Timeout: `timeout 300 codex ...` for long tasks
 
-### If Codex is Unavailable
+### Codex Detection at Startup
 
-If `codex` CLI is not installed or OPENAI_API_KEY is not set:
-1. Log: "Codex unavailable — proceeding with Claude-only reviews"
-2. Continue with Claude subagents for all review stages
-3. Note in completion report: "Codex was unavailable for dual-provider reviews"
+At the very beginning of the session (Step 1), run:
+```bash
+which codex 2>/dev/null && codex --version 2>/dev/null
+```
+
+If codex is found and responds → set `CODEX_AVAILABLE=true`:
+- Use Codex for all parallel reviews (spec, plan, code quality, product acceptance)
+- Log: "Codex detected — dual-provider reviews enabled"
+
+If codex is NOT found or errors → set `CODEX_AVAILABLE=false`:
+- Skip all Codex invocations silently
+- Use Claude-only for all reviews (still effective, just single-provider)
+- Note in completion report: "Codex was unavailable — reviews were Claude-only"
+
+**Never fail or warn the user about missing Codex.** It's a bonus, not a requirement. The workflow works fully with Claude alone.
 
 ---
 
