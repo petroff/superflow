@@ -215,11 +215,9 @@ superflow is built on top of [Superpowers](https://github.com/obra/superpowers) 
 
 ### How they relate
 
-Think of Superpowers as a well-stocked workbench — 14 specialized tools that you pick up and use as needed. Each tool is excellent at its job, and you decide when and how to use them.
+Superpowers gives you great tools — brainstorming, TDD, debugging, reviews. You pick the right tool for each job.
 
-superflow is a CNC machine built from those same tools. It takes the best patterns from Superpowers — TDD, debugging, verification, worktrees — and wires them into a single automated pipeline. You load the material (your idea) and set the program (approve the plan), then it runs the full production cycle autonomously.
-
-Both are valuable for different situations. Superpowers gives you flexibility and control at every step. superflow gives you end-to-end automation when you know what you want and trust the process to deliver it.
+superflow wires those same tools into an automated pipeline. You describe the feature, approve the plan, and it handles the rest.
 
 ## Origin
 
