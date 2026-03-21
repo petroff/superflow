@@ -20,7 +20,7 @@ Most AI coding workflows are either too hands-on (you babysit every step) or too
 
 **Phase 1 — You talk, agent listens and proposes.** Freeflow product conversation with research, expert lenses, and proactive suggestions. The agent doesn't just ask questions — it proposes ideas, challenges assumptions, and brings best practices from the domain. This phase takes time, and that's intentional.
 
-**Phase 2 — You say "go", agent executes autonomously.** Zero interaction until done. The agent creates a PR per sprint using git worktrees for isolation, uses parallel subagents for implementation, runs parallel reviews with split focus, enforces test-first development, requires verification evidence before any completion claim, and does product acceptance testing. You get a report with ready-to-merge PRs at the end.
+**Phase 2 — You say "go", agent executes autonomously.** Zero interaction until done. The agent creates a PR per sprint using git worktrees for isolation, uses parallel subagents for implementation, runs cross-model reviews when a secondary provider is available (split-focus fallback otherwise), enforces test-first development, requires verification evidence before any completion claim, and does product acceptance testing. You get a report with ready-to-merge PRs at the end.
 
 ## What a Session Looks Like
 
@@ -86,9 +86,9 @@ For each Sprint:
 +-- Run baseline tests (verify clean starting state)
 +-- Implement tasks (maximum parallel agents, TDD cycle)
 |   +-- Per task: write failing test -> verify fail -> implement -> verify pass
-|   +-- Spec review -> code quality review (parallel agents)
+|   +-- Spec review -> code quality review (cross-model or split-focus)
 |   +-- Verify: run tests, paste output as evidence
-+-- Product Acceptance Review (parallel agents)
++-- Product Acceptance Review (cross-model or split-focus)
 |   +-- Verify implementation matches spec intent
 +-- Run full test suite, push, create PR
 +-- Clean up worktree
@@ -102,7 +102,7 @@ For each Sprint:
 - **Test-first development** — write failing test, verify failure, implement, verify pass. Never skip steps
 - **Verification discipline** — no completion claims without actual test output as evidence
 - **Max parallelism** — 5 agents if 5 tasks are independent. Never serialize independent work
-- **Parallel split-focus reviews** — two independent agents review in parallel with different focus areas
+- **Cross-model reviews** — when a secondary provider (Codex, Gemini, etc.) is available, runs cross-model review for true independence; falls back to split-focus with two Claude agents otherwise
 - **Product acceptance** — after code review passes, product agents verify the implementation matches the *intent* of the spec
 - **Systematic debugging** — when tests fail, investigate root cause before attempting fixes
 - **Never stops** — accumulates issues and reports at the end. Never asks "should I continue?"
@@ -110,7 +110,7 @@ For each Sprint:
 ## 6 Rules
 
 1. **NEVER pause** during autonomous execution
-2. **ALWAYS use parallel reviews** with split focus for complex tasks
+2. **ALWAYS use cross-model reviews** when secondary provider available, split-focus fallback otherwise
 3. **PR per sprint** — smaller PRs, easier to review
 4. **Maximum parallelism** — use all available agents
 5. **Proactive product thinking** — propose ideas, don't just ask questions
@@ -123,10 +123,10 @@ superflow uses the user's default model for planning and review (where critical 
 | Phase | Task | Model | Reasoning |
 |-------|------|-------|-----------|
 | Phase 1 | Brainstorming, spec, plan | Default (Opus recommended) | ultrathink for deep reasoning |
-| Phase 1 | Independent product expert | Background agent | Parallel brainstorming partner |
+| Phase 1 | Independent product expert | Secondary provider or background agent | Parallel brainstorming partner |
 | Phase 2 | Implementation agents | Sonnet | Standard — plan is detailed enough |
-| Phase 2 | Code quality review | Default (Opus recommended) | ultrathink for critical analysis |
-| Phase 2 | Product acceptance | Default (Opus recommended) | ultrathink for intent verification |
+| Phase 2 | Code quality review | Default + secondary provider | ultrathink + cross-model diversity |
+| Phase 2 | Product acceptance | Default + secondary provider | ultrathink + cross-model diversity |
 
 **Reasoning depth:** superflow uses `ultrathink` in prompts for spec review, plan review, and product acceptance — triggering extended thinking regardless of user's default reasoning effort setting. Implementation agents use standard reasoning since the plan is already detailed.
 
@@ -172,6 +172,7 @@ cp superflow/prompts/*.md ~/.claude/skills/superflow/prompts/
 
 - **Claude Code CLI** — the host environment
 - **GitHub CLI** (`gh`) — for PR creation
+- **Secondary LLM provider** (optional, recommended) — any CLI-based LLM for cross-model reviews: [Codex](https://github.com/openai/codex) (`npm install -g @openai/codex`), [Gemini CLI](https://github.com/google-gemini/gemini-cli), [Aider](https://github.com/paul-gauthier/aider), etc. Without one, reviews fall back to split-focus with two Claude agents
 
 ## Files
 
@@ -180,8 +181,8 @@ cp superflow/prompts/*.md ~/.claude/skills/superflow/prompts/
 | `SKILL.md` | Main skill definition — orchestrator loaded by Claude Code |
 | `prompts/implementer.md` | Implementation agent template with TDD enforcement |
 | `prompts/spec-reviewer.md` | Spec compliance reviewer with calibration rules |
-| `prompts/code-quality-reviewer.md` | Code quality reviewer with anti-noise rules + parallel focus split |
-| `prompts/product-reviewer.md` | Product acceptance reviewer + parallel focus split |
+| `prompts/code-quality-reviewer.md` | Code quality reviewer with anti-noise rules + cross-model/split-focus templates |
+| `prompts/product-reviewer.md` | Product acceptance reviewer + cross-model/split-focus templates |
 | `prompts/testing-guidelines.md` | Testing anti-patterns and best practices reference |
 
 ## Relationship with Superpowers
@@ -200,7 +201,7 @@ superflow is built on top of [Superpowers](https://github.com/obra/superpowers) 
 ### What superflow adds
 - **Two-phase architecture** — collaborative discovery, then fully autonomous execution
 - **Context drift prevention** — checkpoint re-reads, self-check questions, sprint checklists
-- **Parallel split-focus reviews** — two independent agents with different review lenses
+- **Cross-model reviews** — provider-agnostic dual-reviewer pipeline (Codex, Gemini, etc.) with split-focus fallback
 - **Product Acceptance Review** — 3rd review stage verifying spec *intent*, not just code quality
 - **PR per sprint** — smaller, reviewable, independently deployable PRs
 - **Best practices research** — parallel research agents before brainstorming

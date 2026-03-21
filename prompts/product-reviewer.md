@@ -67,9 +67,38 @@ Every finding must include a concrete scenario:
 ### Verdict: ACCEPTED | NEEDS_FIXES
 ```
 
-## Parallel Review Focus Split
+## Cross-Model Review (Tier 1)
 
-When dispatching two parallel review agents, give each a different focus:
+When a secondary provider is available, dispatch it in parallel with the Claude agent. Both get the full base prompt above.
+
+**Secondary provider invocation:**
+```bash
+timeout 300 <provider> <non-interactive-flag> "$(cat <<'PROMPT'
+You are a Product Owner reviewing delivered software against its specification.
+
+## Spec
+$(cat docs/superpowers/specs/SPEC_FILE.md)
+
+## Changes delivered
+$(git diff SPRINT_BASE..HEAD --stat)
+$(git log SPRINT_BASE..HEAD --oneline)
+
+## Review for product fit:
+1. Does the code deliver what the spec promised?
+2. Are there gaps between spec intent and implementation?
+3. Would a real user be satisfied?
+4. Are there edge cases the spec covered but code doesn't handle?
+
+### Spec Gaps
+### UX Concerns
+### Verdict: ACCEPTED | NEEDS_FIXES
+PROMPT
+)" 2>&1
+```
+
+## Split-Focus Fallback (Tier 2)
+
+When no secondary provider is available, dispatch two Claude agents with different focus:
 
 **Agent A — Spec fit focus:**
 Add to the base prompt: "Focus on spec-to-implementation fit and data correctness. Does the code deliver what the spec described? Any requirements skipped or misinterpreted? Are amounts, dates, currencies handled correctly?"

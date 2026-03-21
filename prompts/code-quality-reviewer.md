@@ -59,9 +59,41 @@ Every finding must have:
 ### Verdict: APPROVE | REQUEST_CHANGES
 ```
 
-## Parallel Review Focus Split
+## Cross-Model Review (Tier 1)
 
-When dispatching two parallel review agents, give each a different focus:
+When a secondary provider is available, dispatch it in parallel with the Claude agent. Both get the full base prompt above — the value comes from model diversity, not prompt diversity.
+
+**Secondary provider invocation:**
+```bash
+timeout 300 <provider> <non-interactive-flag> "$(cat <<'PROMPT'
+You are reviewing code changes for quality.
+
+## Diff
+$(git diff BASE_SHA..HEAD_SHA)
+
+## What was implemented
+[Summary]
+
+## Review for:
+1. Bugs, logic errors, null safety
+2. Edge cases and failure modes
+3. Performance (N+1, O(n^2), unnecessary queries)
+4. Security (injection, auth, data exposure)
+5. Test coverage and test quality
+
+Be specific — file:line references. Only flag issues that would cause real problems.
+
+### Critical (must fix)
+### Important (should fix)
+### Minor
+### Verdict: APPROVE | REQUEST_CHANGES
+PROMPT
+)" 2>&1
+```
+
+## Split-Focus Fallback (Tier 2)
+
+When no secondary provider is available, dispatch two Claude agents with different focus:
 
 **Agent A — Correctness focus:**
 Add to the base prompt: "Focus your review on: correctness (logic errors, off-by-one, null/undefined), edge cases (what inputs break this?), error handling (are errors caught and helpful?), and security (injection, auth, data exposure)."

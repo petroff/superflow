@@ -1,6 +1,6 @@
 ---
 name: superflow
-description: "Use when user says 'superflow', 'суперфлоу', or asks for full dev workflow. Two phases: (1) collaborative Product Discovery with multi-expert brainstorming, (2) fully autonomous execution with PR-per-sprint, git worktrees, parallel reviews, max parallelism, and verification discipline."
+description: "Use when user says 'superflow', 'суперфлоу', or asks for full dev workflow. Two phases: (1) collaborative Product Discovery with multi-expert brainstorming, (2) fully autonomous execution with PR-per-sprint, git worktrees, cross-model reviews, max parallelism, and verification discipline."
 ---
 
 # SuperFlow — Product-to-Production Workflow
@@ -36,7 +36,7 @@ The #1 failure mode: skill loads at start, agent "forgets" it after 30+ messages
 **Self-check questions at phase transitions:**
 - "Am I following the SuperFlow process, or my own improvised version?"
 - "Did I use git worktrees for this sprint?" (if no → stop, create one)
-- "Did I run parallel review agents?" (if no → do it now)
+- "Did I run cross-model review (or split-focus fallback)?" (if no → do it now)
 - "Did I verify test output before claiming done?" (if no → run tests now)
 - "Am I about to pause and ask the user something?" (if yes → DON'T, just execute)
 - "Did I run Product Acceptance Review?" (if no → DO IT NOW, before creating PR)
@@ -47,7 +47,7 @@ SPRINT COMPLETION CHECKLIST:
 [ ] Tests pass with evidence (actual output pasted)
 [ ] Lint clean
 [ ] TypeCheck clean
-[ ] Product Acceptance Review launched (parallel agents)
+[ ] Product Acceptance Review launched (cross-model or split-focus)
 [ ] Product Acceptance APPROVED
 [ ] Only then → create PR
 ```
@@ -81,8 +81,10 @@ Use `ultrathink` keyword in prompts for tasks requiring deep reasoning. This tri
 ### Rule 1: NEVER pause during autonomous execution
 After user says "go" / "ok" / "давай" on the approved plan — ZERO stops, ZERO questions, ZERO "should I continue?". Execute all sprints, create all PRs, report when fully done.
 
-### Rule 2: Parallel reviews with independent agents
-Dispatch TWO independent review agents in parallel for every review stage. Each agent gets a different review focus (see prompt templates). Two independent reviewers catch more bugs than one — regardless of provider.
+### Rule 2: Cross-model reviews (with fallback)
+Two truly independent reviewers catch more bugs than one. Different models have different training biases, different blind spots — that's the value.
+
+At startup, detect available secondary providers (see "Secondary Provider Detection"). If a secondary provider is available — use it for all parallel reviews (cross-model). If not — fall back to two Claude agents with split review focus (same model, different lenses). Cross-model is strictly better, but split-focus is still better than a single reviewer.
 
 ### Rule 3: PR per sprint
 Each sprint/logical chunk = separate git branch + PR. Never accumulate 20 commits in one PR. Smaller PRs are easier to review, safer to merge, and can be deployed independently.
@@ -117,7 +119,7 @@ Agents rationalize skipping quality steps. Recognize and reject these:
 | "I'll test after" | Tests passing immediately prove nothing about your code. |
 | "Skip review, it's trivial" | Trivial changes break production. Review anyway. |
 | "One big PR is fine" | 20-commit PRs don't get reviewed. Split into sprints. |
-| "One reviewer is enough" | Two independent reviewers catch more bugs. Always use parallel review. |
+| "One reviewer is enough" | Two independent reviewers catch more bugs. Use cross-model if available, split-focus otherwise. |
 | "Let me ask the user" | After plan approval, execute silently. |
 | "This task is too hard" | Escalate with BLOCKED, don't silently produce bad work. |
 | "Tests are green so it works" | Green tests prove tests pass, not that the feature works. Verify behavior. |
@@ -172,14 +174,18 @@ Before brainstorming, launch parallel research agents to gather external context
 
 ### Step 2.5: Independent Product Expert (parallel with brainstorming)
 
-After research completes and before/during brainstorming, dispatch a background Agent with the gathered context to generate product ideas independently:
+After research completes and before/during brainstorming, dispatch an independent product expert to generate ideas in parallel.
 
+**If secondary provider is available** — dispatch via secondary provider CLI. A different model produces genuinely different ideas due to different training data and reasoning patterns.
+
+**If no secondary provider** — dispatch a background Claude Agent. Even same-model, an independent agent produces different ideas because it has no conversational anchoring bias.
+
+Prompt for both:
 ```
-Dispatch a background Agent with prompt:
 "You are a Product Expert. Given this context about [project description] and [research findings], propose 3-5 concrete product improvements or features. For each: what it is, why it matters for the user, and how it could work. Be specific and creative — suggest things the user might not have thought of."
 ```
 
-Run this IN PARALLEL with the main brainstorming conversation. An independent agent produces different ideas because it has no conversational anchoring bias — synthesize the best from both.
+Run this IN PARALLEL with the main brainstorming conversation. Synthesize the best ideas from both.
 
 ### Step 3: Multi-Expert Brainstorming
 
@@ -222,9 +228,12 @@ Present design section by section. Scale depth to complexity.
 
 Write spec to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`.
 
-### Step 7: Spec Review (parallel agents)
+### Step 7: Spec Review (cross-model or split-focus)
 
-Launch TWO independent review agents in parallel. Use prompt template from `prompts/spec-reviewer.md`. Give each agent a different review focus — one checks completeness/consistency, the other checks scope/YAGNI.
+Launch TWO independent reviewers in parallel using `prompts/spec-reviewer.md`.
+
+**Cross-model mode** (secondary provider available): Claude agent + secondary provider — each runs the full review prompt independently.
+**Split-focus fallback** (no secondary provider): two Claude agents — one checks completeness/consistency, the other checks scope/YAGNI.
 
 **Calibration:** Only flag issues that would cause real problems during planning or implementation. Check: Completeness, Consistency, Clarity, Scope, YAGNI. Do NOT flag style or formatting issues in specs.
 
@@ -251,9 +260,9 @@ A medium feature plan should have 20-30+ steps, NOT 5-10 large tasks. If a step 
 **Each task has:** files, steps, code, tests, commit message
 **Tasks within a sprint can be parallelized where independent**
 
-### Step 9: Plan Review (parallel agents)
+### Step 9: Plan Review (cross-model or split-focus)
 
-Same pattern as spec review. Both agents must APPROVE.
+Same pattern as spec review. Both reviewers must APPROVE.
 
 ### Step 10: User Approval
 
@@ -291,7 +300,7 @@ For each Sprint N:
 |
 +-- 4. After all tasks in sprint: PRODUCT ACCEPTANCE REVIEW
 |      +-- Run full test suite — paste output as evidence
-|      +-- Launch Product Acceptance (parallel agents)
+|      +-- Launch Product Acceptance (cross-model or split-focus)
 |      |      (see prompts/product-reviewer.md)
 |      +-- Fix any product issues found (auto, no user interaction)
 |      +-- Run tests AGAIN after fixes — verify still green
@@ -339,8 +348,8 @@ git worktree remove .worktrees/sprint-N
 
 **Review optimization:**
 - For simple tasks (1-2 files, <50 lines changed): spec review only, skip code quality review
-- For medium tasks (2-5 files): spec review + single code quality agent
-- For complex tasks (5+ files, new architecture): full review cycle (spec + 2 parallel code quality agents + product)
+- For medium tasks (2-5 files): spec review + single code quality reviewer
+- For complex tasks (5+ files, new architecture): full review cycle (spec + cross-model/split-focus code quality + product)
 - Product review: only for user-facing changes (UI, bot responses, API behavior)
 
 ### Systematic Debugging
@@ -356,16 +365,15 @@ When a test fails during execution, follow this protocol — never do "try rando
 
 If unfixable after 2 targeted attempts, mark as BLOCKED with diagnostic evidence and continue.
 
-### Parallel Code Quality Review
+### Code Quality Review (cross-model or split-focus)
 
-MANDATORY for complex tasks. Launch TWO independent review agents in parallel.
-Use prompt template from `prompts/code-quality-reviewer.md`.
+MANDATORY for complex tasks. Use prompt template from `prompts/code-quality-reviewer.md`.
 
-Give each agent a different focus:
+**Cross-model mode** (secondary provider available): dispatch Claude agent + secondary provider CLI in parallel, both with the full review prompt. Different models catch different bug categories due to different training.
+
+**Split-focus fallback** (no secondary provider): dispatch two Claude agents in parallel with different focus:
 - **Agent A (correctness focus):** logic errors, edge cases, error handling, security
 - **Agent B (architecture focus):** performance, pattern compliance, test quality, maintainability
-
-Two agents with different lenses catch more issues than one agent checking everything.
 
 ### Product Acceptance Review (MANDATORY per sprint — DO NOT SKIP)
 
@@ -373,12 +381,12 @@ After all tasks pass code review, run Product Acceptance. This is the **most imp
 
 **This step is NON-NEGOTIABLE.** Do not rationalize skipping it ("tests pass so it's fine", "sprint is simple enough"). Every sprint gets a product acceptance review before PR creation.
 
-Launch TWO independent product review agents IN PARALLEL using `prompts/product-reviewer.md`.
+Launch TWO independent product reviewers IN PARALLEL using `prompts/product-reviewer.md`.
 
 **Steps:**
 1. After all sprint tasks complete and tests pass
-2. Launch Agent A with product-reviewer prompt — focus on spec-to-implementation fit (background)
-3. Launch Agent B with product-reviewer prompt — focus on user scenarios and edge cases (background)
+2. Launch Claude Agent with product-reviewer prompt (background)
+3. Launch secondary provider with product-reviewer prompt (background) — or second Claude agent with different focus if no secondary provider
 4. Wait for both to complete
 5. Merge results — if EITHER says NEEDS_FIXES → fix autonomously → re-review
 6. Only create PR after BOTH accept
@@ -403,7 +411,7 @@ PR body format:
 
 ### Verification Evidence
 - Test suite: X/Y passing (full output reviewed)
-- Product acceptance: ACCEPTED by parallel review agents
+- Product acceptance: ACCEPTED (cross-model / split-focus)
 
 ### Dependencies
 - Depends on: PR #NNN (Sprint N-1) — merge that first
@@ -446,16 +454,17 @@ When ALL sprints are done, report to user:
 
 ---
 
-## Parallel Review Strategy
+## Cross-Model Review Strategy
 
-The core principle: **two independent reviewers catch more bugs than one.** This works because each reviewer brings a different focus, reducing blind spots.
+The core principle: **two truly independent reviewers catch more bugs than one.** Different AI models have different training data, different reasoning patterns, and different blind spots. Cross-model review exploits this diversity.
 
-### How it works
-- Dispatch TWO Agent tool calls in parallel (`run_in_background: true`)
-- Each agent gets the same base prompt but a **different review focus**
-- Merge findings from both agents before proceeding
+### Tier 1: Cross-model (preferred)
+When a secondary provider is available, dispatch Claude + secondary provider in parallel. Both get the same review prompt. The value comes from model diversity, not prompt diversity.
 
-### Review focus split
+### Tier 2: Split-focus fallback
+When no secondary provider is available, dispatch two Claude agents with **different review focus areas**. Same model, but different lenses reduce blind spots compared to a single reviewer.
+
+### Split-focus assignments (Tier 2 only)
 
 **Spec review:**
 - Agent A: completeness + consistency (are all requirements implemented?)
@@ -470,9 +479,44 @@ The core principle: **two independent reviewers catch more bugs than one.** This
 - Agent B: user scenarios, edge cases, error UX
 
 ### When to use parallel review
-- Complex tasks (5+ files, new architecture): always parallel
+- Complex tasks (5+ files, new architecture): always parallel (cross-model or split-focus)
 - Medium tasks (2-5 files): single reviewer is sufficient
 - Simple tasks (1-2 files): spec review only
+
+### Secondary Provider Detection
+
+At the very beginning of the session, detect available secondary providers:
+
+```bash
+# Check for known CLI-based LLM providers
+which codex 2>/dev/null && codex --version 2>/dev/null
+which gemini 2>/dev/null && gemini --version 2>/dev/null
+which aider 2>/dev/null && aider --version 2>/dev/null
+```
+
+Use the first available provider. If none found — use Tier 2 (split-focus) silently. Never fail or warn the user about missing providers.
+
+### Secondary Provider Invocation
+
+All secondary providers are invoked via Bash tool with a timeout:
+
+```bash
+# Pattern: timeout + provider CLI + non-interactive mode + prompt
+# macOS: use gtimeout (brew install coreutils) or timeout
+# Linux: use timeout
+
+# Codex example:
+timeout 300 codex exec --full-auto "REVIEW_PROMPT" 2>&1
+
+# Gemini example:
+timeout 300 gemini -p "REVIEW_PROMPT" 2>&1
+```
+
+Key rules:
+- Self-contained prompt (secondary providers can't ask questions)
+- Include ALL context (file paths, project conventions, constraints)
+- Always `git diff` after secondary provider implementations to verify scope
+- 5-minute timeout to prevent hangs
 
 ---
 
@@ -482,7 +526,7 @@ The core principle: **two independent reviewers catch more bugs than one.** This
 2. **Claiming done without test output** — Paste evidence or it didn't happen
 3. **Skipping the "verify fail" step in TDD** — A test that never failed proves nothing
 4. **One giant PR** — Always PR per sprint
-5. **Single reviewer for complex tasks** — Always use parallel review agents for complex work
+5. **Single reviewer for complex tasks** — Always use cross-model or split-focus review for complex work
 6. **2 agents when 5 could run** — Maximize parallelism
 7. **Only asking questions, no suggestions** — Always propose ideas alongside questions
 8. **Committing directly to main** — Always feature branches
@@ -517,6 +561,6 @@ SuperFlow OVERRIDES these superpowers behaviors:
 - Brainstorming: adds proactive product suggestions (not just questions)
 - Plan execution: PR per sprint (not one PR for everything)
 - Plan granularity: 2-5 minute steps, 20-30+ per feature (not 5-10 big tasks)
-- Review: mandatory parallel review with split focus (not single-pass)
+- Review: mandatory cross-model review with split-focus fallback (not single-pass)
 - Completion: requires verification evidence (not self-reported status)
 - Pacing: zero pauses after plan approval (not "check with user between tasks")
