@@ -134,6 +134,20 @@ cp superflow/prompts/*.md ~/.claude/skills/superflow/prompts/
 | `prompts/product-reviewer.md` | Product acceptance reviewer + Codex template |
 | `prompts/testing-guidelines.md` | Testing anti-patterns and best practices reference |
 
+## Acknowledgements
+
+SuperFlow is built on top of [Superpowers](https://github.com/anthropics/claude-code/tree/main/plugins/superpowers) — the official Claude Code skill framework by Anthropic. Many core patterns come directly from Superpowers:
+
+- **Brainstorming flow** (question-driven design exploration)
+- **Subagent-driven development** (fresh agent per task + review stages)
+- **Test-driven development** (Red-Green-Refactor cycle)
+- **Verification discipline** ("evidence before claims" iron law)
+- **Git worktrees** (sprint isolation)
+- **Systematic debugging** (root cause before fix)
+- **Plan document structure** (bite-sized tasks, TDD steps)
+
+SuperFlow extends and overrides Superpowers with: autonomous execution (zero pauses), PR-per-sprint, Codex dual-provider reviews, product acceptance gates, best practices research, proactive product suggestions, and context drift prevention.
+
 ## Origin
 
 Built during a real session: analytics engine for a family finance tracker. 16 tasks, 4 sprints, 20 commits, 488 tests — in one conversation. Every rule exists because something went wrong without it:

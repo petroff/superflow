@@ -21,13 +21,33 @@ Phase 2: AUTONOMOUS (no stops until done)
 
 ---
 
+## CONTEXT DRIFT PREVENTION
+
+The #1 failure mode: skill loads at start, agent "forgets" it after 30+ messages and improvises.
+
+**Checkpoint re-reads:** Before each major phase transition, RE-READ this skill file:
+- Before starting Phase 2 (after user says "go") → re-read SKILL.md Phase 2 section
+- Before each sprint → re-read Per-Sprint Flow section
+- Before dispatching reviewers → re-read the relevant prompt template from `prompts/`
+
+**How to re-read:** Use the Read tool on the skill file. Don't rely on memory of what it said. The skill may have been updated since you last read it.
+
+**Self-check questions at phase transitions:**
+- "Am I following the SuperFlow process, or my own improvised version?"
+- "Did I use git worktrees for this sprint?" (if no → stop, create one)
+- "Did I run Codex in parallel for reviews?" (if no and available → do it now)
+- "Did I verify test output before claiming done?" (if no → run tests now)
+- "Am I about to pause and ask the user something?" (if yes → DON'T, just execute)
+
+---
+
 ## CRITICAL RULES
 
 ### Rule 1: NEVER pause during autonomous execution
 After user says "go" / "ok" / "давай" on the approved plan — ZERO stops, ZERO questions, ZERO "should I continue?". Execute all sprints, create all PRs, report when fully done.
 
-### Rule 2: Use Codex when available
-At startup, detect if Codex CLI is installed. If yes — use it for all parallel reviews (spec, plan, code quality, product acceptance). If not — proceed with Claude-only, no warnings. Codex is a bonus for dual-provider coverage, not a hard requirement.
+### Rule 2: Use Codex for all reviews (default ON)
+At startup, detect Codex: `which codex && codex --version`. If available — use it for ALL parallel reviews without exception. If unavailable — fall back to Claude-only silently. Codex is the default, not a bonus. Two models catch more bugs than one.
 
 ### Rule 3: PR per sprint
 Each sprint/logical chunk = separate git branch + PR. Never accumulate 20 commits in one PR. Smaller PRs are easier to review, safer to merge, and can be deployed independently.
