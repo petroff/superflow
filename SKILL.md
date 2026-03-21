@@ -29,6 +29,7 @@ The #1 failure mode: skill loads at start, agent "forgets" it after 30+ messages
 - Before starting Phase 2 (after user says "go") → re-read SKILL.md Phase 2 section
 - Before each sprint → re-read Per-Sprint Flow section
 - Before dispatching reviewers → re-read the relevant prompt template from `prompts/`
+- After each sprint completes → re-read Product Acceptance Review section before creating PR
 
 **How to re-read:** Use the Read tool on the skill file. Don't rely on memory of what it said. The skill may have been updated since you last read it.
 
@@ -38,6 +39,19 @@ The #1 failure mode: skill loads at start, agent "forgets" it after 30+ messages
 - "Did I run Codex in parallel for reviews?" (if no and available → do it now)
 - "Did I verify test output before claiming done?" (if no → run tests now)
 - "Am I about to pause and ask the user something?" (if yes → DON'T, just execute)
+- "Did I run Product Acceptance Review?" (if no → DO IT NOW, before creating PR)
+
+**Mandatory self-reminder loop:** After completing each sprint's tasks, BEFORE creating the PR, output this checklist to yourself:
+```
+SPRINT COMPLETION CHECKLIST:
+[ ] Tests pass with evidence (actual output pasted)
+[ ] Lint clean
+[ ] TypeCheck clean
+[ ] Product Acceptance Review launched (Claude + Codex)
+[ ] Product Acceptance APPROVED
+[ ] Only then → create PR
+```
+If any box is unchecked, complete that step before proceeding.
 
 ---
 
@@ -316,17 +330,27 @@ MANDATORY for complex tasks. Launch in parallel with Claude reviewer.
 Use prompt template from `prompts/code-quality-reviewer.md`.
 
 ```bash
-codex --approval-mode full-auto --quiet \
-  -p "PROMPT_CONTENT" 2>&1
+# macOS (requires `brew install coreutils`):
+gtimeout 300 codex exec --full-auto "PROMPT_CONTENT" 2>&1
+# Linux:
+timeout 300 codex exec --full-auto "PROMPT_CONTENT" 2>&1
 ```
 
-### Product Acceptance Review (MANDATORY per sprint)
+### Product Acceptance Review (MANDATORY per sprint — DO NOT SKIP)
 
 After all tasks pass code review, run Product Acceptance. This is the **most important review stage** — it verifies that what was built matches the spec INTENT, not just the technical requirements. Code can be technically clean but productively wrong.
 
+**This step is NON-NEGOTIABLE.** Do not rationalize skipping it ("tests pass so it's fine", "sprint is simple enough"). Every sprint gets a product acceptance review before PR creation.
+
 Launch Claude + Codex product reviewers IN PARALLEL using `prompts/product-reviewer.md`.
 
-**Merge results from both.** If either says NEEDS_FIXES -> fix autonomously -> re-review. Only create PR after BOTH accept.
+**Steps:**
+1. After all sprint tasks complete and tests pass
+2. Launch Claude Agent with product-reviewer prompt (background)
+3. Launch Codex with product-reviewer prompt (background, use gtimeout on macOS)
+4. Wait for both to complete
+5. Merge results — if EITHER says NEEDS_FIXES → fix autonomously → re-review
+6. Only create PR after BOTH accept (or Codex unavailable → Claude-only acceptance is sufficient)
 
 ### PR Creation Pattern
 
@@ -402,16 +426,19 @@ When ALL sprints are done, report to user:
 
 ### Codex Invocation Pattern
 
-Always via Bash tool:
+Always via Bash tool. On macOS, use `gtimeout` (from `brew install coreutils`) instead of `timeout`:
 ```bash
-codex --approval-mode full-auto --quiet -p "PROMPT" 2>&1
+# macOS:
+gtimeout 300 codex exec --full-auto "PROMPT" 2>&1
+# Linux:
+timeout 300 codex exec --full-auto "PROMPT" 2>&1
 ```
 
 Key rules:
 - Self-contained prompt (Codex can't ask questions)
 - Include ALL context (file paths, project conventions, constraints)
 - Always `git diff` after Codex implementations to verify scope
-- Timeout: `timeout 300 codex ...` for long tasks
+- Timeout: On macOS use `gtimeout 300 codex ...` (from coreutils); on Linux use `timeout 300 codex ...`
 
 ### Codex Detection at Startup
 
