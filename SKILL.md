@@ -354,11 +354,13 @@ Launch Claude + Codex product reviewers IN PARALLEL using `prompts/product-revie
 
 ### PR Creation Pattern
 
+**IMPORTANT: All PRs must target `main` (or the project's default branch).** Do NOT create PRs targeting other sprint branches. When Sprint 1 is squash-merged, GitHub deletes its branch and auto-closes any PRs that used it as a base — forcing a rebase + PR recreation cycle. Always target `main` and merge sprints in order.
+
 Each sprint creates its own PR:
 
 ```bash
 git push -u origin feat/<feature>-sprint-N
-gh pr create --title "Sprint N: <scope>" --body "..."
+gh pr create --base main --title "Sprint N: <scope>" --body "..."
 ```
 
 PR body format:
