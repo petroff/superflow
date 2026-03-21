@@ -40,6 +40,26 @@ Don't just ask questions — PROPOSE ideas. "Have you considered X?" is better t
 
 ---
 
+## Mode Detection
+
+At the start, detect which mode applies based on context:
+
+**Enhancement mode** (existing codebase):
+- Deeper codebase exploration: read key files, understand patterns, find reusable code
+- Step 1 (Context Exploration) is heavier — understand what exists before proposing changes
+- Brainstorming references existing architecture: "The current data model already has X, we can extend it"
+- Plan preserves backward compatibility
+
+**Greenfield mode** (new project / new major subsystem):
+- Focus on stack selection, project structure, CI/CD setup
+- Research phase includes framework comparison, starter templates, infrastructure options
+- Brainstorming is more open-ended — no existing patterns to follow
+- First sprint often includes project scaffolding + CI/CD
+
+The mode is auto-detected from context (existing code = enhancement, empty repo = greenfield). No need to ask the user.
+
+---
+
 ## Phase 1: Product Discovery (COLLABORATIVE)
 
 This phase is a conversation with the user. Take your time here — rushing discovery leads to building the wrong thing.
@@ -423,6 +443,19 @@ If `codex` CLI is not installed or OPENAI_API_KEY is not set:
 8. **Only asking questions, no suggestions** — Always propose ideas alongside questions
 9. **Committing directly to main** — Always feature branches
 10. **Force-pushing without user consent** — Never destructive git ops
+
+---
+
+## Documentation Update (after all sprints)
+
+After the last sprint's PR is created, before the completion report:
+
+1. **Update CLAUDE.md** — add new modules, files, conventions introduced by this work
+2. **Update README** (if project has one) — add new features, API endpoints, commands
+3. **Update BACKLOG.md** (if exists) — mark completed items, add new items discovered during implementation
+4. **Commit documentation updates** to the last sprint's branch
+
+This ensures the project's documentation reflects the new reality. The agent should NOT ask permission — just update docs as part of the autonomous flow.
 
 ---
 
