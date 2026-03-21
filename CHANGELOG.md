@@ -2,6 +2,17 @@
 
 All notable changes to superflow will be documented in this file.
 
+## [2.0.1] - 2026-03-21
+
+### Fixed
+- **README version** now matches CHANGELOG (v2.0.0)
+- **macOS timeout**: document `perl -e 'alarm N; exec @ARGV'` as default macOS fallback — `timeout` and `gtimeout` are not available out of the box
+- **Secondary provider detection**: replaced `which` check with smoke test — a binary can exist but fail without API keys
+- **Removed `mode: bypassPermissions`** from agent dispatch rules — not a valid Agent tool parameter
+- **Heredoc templates in prompts**: fixed `<<'PROMPT'` (quoted, prevents `$()` expansion) → `<<PROMPT` (unquoted) in code-quality-reviewer and product-reviewer
+- **Superpowers skill reference**: `superpowers:debugging` → `superpowers:systematic-debugging`
+- **Spec/plan directories**: added `mkdir -p` instructions before writing to `docs/superpowers/specs/` and `docs/superpowers/plans/`
+
 ## [2.0.0] - 2026-03-21
 
 ### Changed

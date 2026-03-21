@@ -226,7 +226,7 @@ Present design section by section. Scale depth to complexity.
 
 ### Step 6: Spec Document
 
-Write spec to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`.
+Create the directory if needed (`mkdir -p docs/superpowers/specs`) and write spec to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`.
 
 ### Step 7: Spec Review (cross-model or split-focus)
 
@@ -241,7 +241,7 @@ Fix issues from both review agents. Re-review if NEEDS_REVISION.
 
 ### Step 8: Implementation Plan
 
-Write plan to `docs/superpowers/plans/YYYY-MM-DD-<topic>.md`.
+Create the directory if needed (`mkdir -p docs/superpowers/plans`) and write plan to `docs/superpowers/plans/YYYY-MM-DD-<topic>.md`.
 
 **Plan structure:**
 - Break into sprints (logical chunks, each deployable independently)
@@ -340,7 +340,6 @@ git worktree remove .worktrees/sprint-N
 
 **Implementation agents:**
 - Use `run_in_background: true` for independent tasks
-- Use `mode: bypassPermissions` for all implementation agents
 - Use `model: sonnet` for mechanical tasks (1-2 files, clear spec)
 - Use default model for complex integration tasks
 - Maximum concurrent agents: limited only by task independence
@@ -485,31 +484,38 @@ When no secondary provider is available, dispatch two Claude agents with **diffe
 
 ### Secondary Provider Detection
 
-At the very beginning of the session, detect available secondary providers:
+At the very beginning of the session, detect available secondary providers with a smoke test:
 
 ```bash
-# Check for known CLI-based LLM providers
-which codex 2>/dev/null && codex --version 2>/dev/null
-which gemini 2>/dev/null && gemini --version 2>/dev/null
-which aider 2>/dev/null && aider --version 2>/dev/null
+# Check for known CLI-based LLM providers (smoke test — not just `which`)
+# A provider is "available" only if it can produce a response
+codex exec --full-auto "say ok" 2>/dev/null && echo "CODEX_OK"
+gemini -p "say ok" 2>/dev/null && echo "GEMINI_OK"
+aider --message "say ok" --yes 2>/dev/null && echo "AIDER_OK"
 ```
 
-Use the first available provider. If none found — use Tier 2 (split-focus) silently. Never fail or warn the user about missing providers.
+**Important:** `which <provider>` is NOT sufficient — a binary can exist but fail due to missing API keys or auth. Always run a smoke test that requires a real API response.
+
+Use the first provider that passes the smoke test. If none found — use Tier 2 (split-focus) silently. Never fail or warn the user about missing providers.
 
 ### Secondary Provider Invocation
 
-All secondary providers are invoked via Bash tool with a timeout:
+All secondary providers are invoked via Bash tool with a timeout.
+
+**Timeout command (platform-aware):**
+- Linux: `timeout 300 <cmd>`
+- macOS with coreutils: `gtimeout 300 <cmd>`
+- macOS without coreutils (default): `perl -e 'alarm 300; exec @ARGV' <cmd>`
 
 ```bash
-# Pattern: timeout + provider CLI + non-interactive mode + prompt
-# macOS: use gtimeout (brew install coreutils) or timeout
-# Linux: use timeout
-
-# Codex example:
-timeout 300 codex exec --full-auto "REVIEW_PROMPT" 2>&1
+# Codex example (macOS without coreutils):
+perl -e 'alarm 300; exec @ARGV' codex exec --full-auto "REVIEW_PROMPT" 2>&1
 
 # Gemini example:
-timeout 300 gemini -p "REVIEW_PROMPT" 2>&1
+perl -e 'alarm 300; exec @ARGV' gemini -p "REVIEW_PROMPT" 2>&1
+
+# Linux:
+timeout 300 codex exec --full-auto "REVIEW_PROMPT" 2>&1
 ```
 
 Key rules:
@@ -517,6 +523,7 @@ Key rules:
 - Include ALL context (file paths, project conventions, constraints)
 - Always `git diff` after secondary provider implementations to verify scope
 - 5-minute timeout to prevent hangs
+- Use Bash `timeout` parameter (up to 600000ms) as an alternative to shell-level timeouts
 
 ---
 
@@ -555,7 +562,7 @@ SuperFlow uses these superpowers skills internally:
 - `superpowers:test-driven-development` — TDD within tasks (see `prompts/implementer.md`)
 - `superpowers:verification-before-completion` — Rule 6, evidence-based completion
 - `superpowers:using-git-worktrees` — sprint isolation via worktrees
-- `superpowers:debugging` — systematic debugging protocol
+- `superpowers:systematic-debugging` — systematic debugging protocol
 
 SuperFlow OVERRIDES these superpowers behaviors:
 - Brainstorming: adds proactive product suggestions (not just questions)

@@ -1,6 +1,6 @@
 # superflow
 
-**v1.2.0** · A Claude Code skill for autonomous product-to-production development.
+**v2.0.0** · A Claude Code skill for autonomous product-to-production development.
 
 Combines collaborative product discovery with fully autonomous execution — you discuss what to build, then the agent builds it end-to-end without stopping.
 

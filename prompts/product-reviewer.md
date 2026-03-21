@@ -72,8 +72,12 @@ Every finding must include a concrete scenario:
 When a secondary provider is available, dispatch it in parallel with the Claude agent. Both get the full base prompt above.
 
 **Secondary provider invocation:**
+
+Build the prompt string first, then pass it to the provider. The heredoc must use an **unquoted** delimiter so `$()` expansions work:
+
 ```bash
-timeout 300 <provider> <non-interactive-flag> "$(cat <<'PROMPT'
+# Build prompt with expanded variables
+REVIEW_PROMPT="$(cat <<PROMPT
 You are a Product Owner reviewing delivered software against its specification.
 
 ## Spec
@@ -93,7 +97,10 @@ $(git log SPRINT_BASE..HEAD --oneline)
 ### UX Concerns
 ### Verdict: ACCEPTED | NEEDS_FIXES
 PROMPT
-)" 2>&1
+)"
+
+# Pass to provider (use platform-appropriate timeout)
+perl -e 'alarm 300; exec @ARGV' <provider> <non-interactive-flag> "$REVIEW_PROMPT" 2>&1
 ```
 
 ## Split-Focus Fallback (Tier 2)

@@ -64,8 +64,12 @@ Every finding must have:
 When a secondary provider is available, dispatch it in parallel with the Claude agent. Both get the full base prompt above — the value comes from model diversity, not prompt diversity.
 
 **Secondary provider invocation:**
+
+Build the prompt string first, then pass it to the provider. The heredoc must use an **unquoted** delimiter so `$()` expansions work:
+
 ```bash
-timeout 300 <provider> <non-interactive-flag> "$(cat <<'PROMPT'
+# Build prompt with expanded variables
+REVIEW_PROMPT="$(cat <<PROMPT
 You are reviewing code changes for quality.
 
 ## Diff
@@ -88,7 +92,10 @@ Be specific — file:line references. Only flag issues that would cause real pro
 ### Minor
 ### Verdict: APPROVE | REQUEST_CHANGES
 PROMPT
-)" 2>&1
+)"
+
+# Pass to provider (use platform-appropriate timeout)
+perl -e 'alarm 300; exec @ARGV' <provider> <non-interactive-flag> "$REVIEW_PROMPT" 2>&1
 ```
 
 ## Split-Focus Fallback (Tier 2)
