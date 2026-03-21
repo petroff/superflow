@@ -1,6 +1,6 @@
 # superflow
 
-**v1.1.0** · A Claude Code skill for autonomous product-to-production development.
+**v1.2.0** · A Claude Code skill for autonomous product-to-production development.
 
 Combines collaborative product discovery with fully autonomous execution — you discuss what to build, then the agent builds it end-to-end without stopping.
 
@@ -110,26 +110,43 @@ For each Sprint:
 
 superflow uses the user's default model for planning and review (where critical thinking matters), and lighter models for mechanical execution:
 
-| Phase | Task | Model | Why |
-|-------|------|-------|-----|
-| Phase 1 | Brainstorming, spec, plan | User's default | Needs deep reasoning |
-| Phase 2 | Implementation agents | `sonnet` | Plan is detailed enough, speed matters |
-| Phase 2 | Code quality review | User's default | Needs critical analysis |
-| Phase 2 | Product acceptance | User's default | Needs intent understanding |
-| Phase 2 | Codex reviews | Codex default (gpt-5.4) | Different model = different bugs caught |
+| Phase | Task | Model | Reasoning |
+|-------|------|-------|-----------|
+| Phase 1 | Brainstorming, spec, plan | Opus (recommended) | ultrathink for deep reasoning |
+| Phase 1 | Codex product ideas | Codex default | Parallel brainstorming partner |
+| Phase 2 | Implementation agents | Sonnet | Standard — plan is detailed enough |
+| Phase 2 | Code quality review | Opus (recommended) | ultrathink for critical analysis |
+| Phase 2 | Product acceptance | Opus (recommended) | ultrathink for intent verification |
+| Phase 2 | Codex reviews | Codex default | xhigh reasoning by default |
 
-This balances cost and speed: save on mechanical coding, invest in thinking.
+**Reasoning depth:** superflow uses `ultrathink` in prompts for spec review, plan review, and product acceptance — triggering extended thinking regardless of user's default reasoning effort setting. Implementation agents use standard reasoning since the plan is already detailed.
+
+## Recommended Launch
+
+For fully autonomous execution, superflow works best with permissions bypassed:
+
+```bash
+# Claude Code — skip permission prompts (run in isolated environment!)
+claude --dangerously-skip-permissions
+
+# Then invoke superflow
+> superflow — build feature X
+```
+
+**Reasoning effort:** Set to `high` or `max` via `/effort` in Claude Code. superflow adds `ultrathink` to critical prompts on top of this.
+
+**Codex:** Runs with `--full-auto` by default (sandboxed to workspace).
 
 ## Safety Warning
 
 superflow runs in fully autonomous mode during Phase 2 — it creates branches, writes code, commits, and pushes without asking. **Run it in an isolated environment:**
 
-- **Docker container** or **VPS** — recommended for production repos
+- **Docker container** or **VPS** — strongly recommended for production repos
 - **Git worktrees** — superflow uses worktrees by default, which provides some isolation
 - **Disposable branch** — always works on feature branches, never commits to main directly
 - **Review before merge** — PRs are created but never auto-merged; you review and merge manually
 
-The skill uses `mode: bypassPermissions` for subagents and Codex runs with `--full-auto`. Make sure you're comfortable with autonomous code execution before running.
+`--dangerously-skip-permissions` disables all safety prompts. `--full-auto` gives Codex write access to your workspace. Only use these in environments you're comfortable with.
 
 ## Install
 

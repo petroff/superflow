@@ -1,6 +1,14 @@
 # Changelog
 
-All notable changes to SuperFlow will be documented in this file.
+All notable changes to superflow will be documented in this file.
+
+## [1.2.0] - 2026-03-21
+
+### Added
+- **ultrathink reasoning**: spec review, plan review, and product acceptance prompts now use `ultrathink` for extended thinking, regardless of user's default reasoning effort
+- **Codex in brainstorming**: Codex dispatched as Product Expert during Phase 1 brainstorming (parallel with Claude conversation) — two AI models produce more diverse ideas
+- **Recommended launch section**: `claude --dangerously-skip-permissions` for autonomous execution, reasoning effort guidance (high/max + ultrathink)
+- **Model strategy table**: detailed per-task model and reasoning recommendations (Opus for planning/review, Sonnet for implementation)
 
 ## [1.1.0] - 2026-03-21
 

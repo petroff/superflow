@@ -55,6 +55,27 @@ If any box is unchecked, complete that step before proceeding.
 
 ---
 
+## REASONING DEPTH
+
+Use `ultrathink` keyword in prompts for tasks requiring deep reasoning. This triggers extended thinking mode regardless of the user's default reasoning effort setting.
+
+**Always use ultrathink for:**
+- Spec review prompts (dispatched to Claude agents)
+- Plan review prompts (dispatched to Claude agents)
+- Product Acceptance review prompts
+- Architecture decisions during brainstorming
+
+**Standard reasoning for:**
+- Implementation agents (plan is already detailed)
+- Simple file operations, commits, pushes
+
+**How:** Prepend "ultrathink:" to the agent prompt. Example:
+```
+"ultrathink: You are reviewing this spec for completeness..."
+```
+
+---
+
 ## CRITICAL RULES
 
 ### Rule 1: NEVER pause during autonomous execution
@@ -148,6 +169,16 @@ Before brainstorming, launch parallel research agents to gather external context
 **Format:** Each research agent returns a brief summary. Orchestrator synthesizes into context for brainstorming. Share key findings with user.
 
 **This is NOT optional.** Even for seemingly simple features, 5 minutes of research prevents hours of reinventing.
+
+### Step 2.5: Codex as Product Expert (parallel with brainstorming)
+
+After research completes and before/during brainstorming, dispatch Codex with the gathered context to generate product ideas independently:
+
+```bash
+gtimeout 300 codex exec --full-auto "You are a Product Expert. Given this context about [project description] and [research findings], propose 3-5 concrete product improvements or features. For each: what it is, why it matters for the user, and how it could work. Be specific and creative — suggest things the user might not have thought of." 2>&1
+```
+
+Run this IN PARALLEL with the Claude brainstorming conversation. Two different AI models produce different ideas — synthesize the best from both.
 
 ### Step 3: Multi-Expert Brainstorming
 
