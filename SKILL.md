@@ -1,6 +1,6 @@
 ---
 name: superflow
-description: "Use when user says 'superflow', 'суперфлоу', or asks for full dev workflow. Two phases: (1) collaborative Product Discovery with multi-expert brainstorming, (2) fully autonomous execution with PR-per-sprint, Codex reviews, max parallelism."
+description: "Use when user says 'superflow', 'суперфлоу', or asks for full dev workflow. Two phases: (1) collaborative Product Discovery with multi-expert brainstorming, (2) fully autonomous execution with PR-per-sprint, git worktrees, Codex reviews, max parallelism, and verification discipline."
 ---
 
 # SuperFlow — Product-to-Production Workflow
@@ -12,10 +12,10 @@ Phase 1: COLLABORATIVE (with user)
   Product Discovery → Multi-Expert Brainstorming → Spec → Plan
 
 Phase 2: AUTONOMOUS (no stops until done)
-  Sprint 1 → PR #1
-  Sprint 2 → PR #2
+  Sprint 1 (worktree) → PR #1
+  Sprint 2 (worktree) → PR #2
   ...
-  Sprint N → PR #N
+  Sprint N (worktree) → PR #N
   → Report to user: "Done. N PRs ready for review."
 ```
 
@@ -24,7 +24,7 @@ Phase 2: AUTONOMOUS (no stops until done)
 ## CRITICAL RULES
 
 ### Rule 1: NEVER pause during autonomous execution
-After user says "go" / "ок" / "давай" on the approved plan — ZERO stops, ZERO questions, ZERO "should I continue?". Execute all sprints, create all PRs, report when fully done.
+After user says "go" / "ok" / "давай" on the approved plan — ZERO stops, ZERO questions, ZERO "should I continue?". Execute all sprints, create all PRs, report when fully done.
 
 ### Rule 2: Use Codex when available
 At startup, detect if Codex CLI is installed. If yes — use it for all parallel reviews (spec, plan, code quality, product acceptance). If not — proceed with Claude-only, no warnings. Codex is a bonus for dual-provider coverage, not a hard requirement.
@@ -37,6 +37,35 @@ Always dispatch the maximum number of independent agents simultaneously. If 5 ta
 
 ### Rule 5: Proactive product thinking
 Don't just ask questions — PROPOSE ideas. "Have you considered X?" is better than "What do you want?". Research best practices, suggest features from analogous products, challenge assumptions.
+
+### Rule 6: NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
+Before marking ANY task complete: run tests, read output, THEN claim done.
+Before creating ANY PR: run full test suite, verify clean output.
+
+**Red flags that indicate rule violation:**
+- "should work" — NOT evidence
+- "probably passes" — NOT evidence
+- "seems fine" — NOT evidence
+- "I believe this is correct" — NOT evidence
+
+**Evidence** = actual command output showing pass/success, pasted in full.
+
+---
+
+## Rationalization Prevention
+
+Agents rationalize skipping quality steps. Recognize and reject these:
+
+| Rationalization | Reality |
+|---|---|
+| "Too simple to test" | Simple code breaks. Test takes 30 seconds. |
+| "I'll test after" | Tests passing immediately prove nothing about your code. |
+| "Skip review, it's trivial" | Trivial changes break production. Review anyway. |
+| "One big PR is fine" | 20-commit PRs don't get reviewed. Split into sprints. |
+| "Codex isn't needed" | If available, use it. Different models catch different bugs. |
+| "Let me ask the user" | After plan approval, execute silently. |
+| "This task is too hard" | Escalate with BLOCKED, don't silently produce bad work. |
+| "Tests are green so it works" | Green tests prove tests pass, not that the feature works. Verify behavior. |
 
 ---
 
@@ -82,7 +111,7 @@ Before brainstorming, launch parallel research agents to gather external context
 - How analogous products solve the same problem (competitors, open-source alternatives)
 - Relevant design patterns, data models, algorithms
 
-**Format:** Each research agent returns a brief summary. Orchestrator synthesizes into context for brainstorming. Share key findings with user: "Я нашёл несколько интересных вещей: [findings]. Это влияет на наш подход так: [insight]."
+**Format:** Each research agent returns a brief summary. Orchestrator synthesizes into context for brainstorming. Share key findings with user.
 
 **This is NOT optional.** Even for seemingly simple features, 5 minutes of research prevents hours of reinventing.
 
@@ -96,23 +125,22 @@ Before brainstorming, launch parallel research agents to gather external context
 - Ask for references: apps, screenshots, examples, competitors — anything that shows intent
 - Understand scope ambition: personal tool vs service for others? MVP vs long-term?
 
-**Rhythm: questions → proposals → questions**
+**Rhythm: questions -> proposals -> questions**
 Don't just ask. After gathering enough context (3-5 questions), make concrete product proposals based on what you've heard + research findings. Let the user react — "yes / no / interesting but..." — this generates new requirements you wouldn't have found by asking.
 
 Example cycle:
 1. Ask 3-4 questions to understand the vision
 2. Present 2-3 product ideas/suggestions based on answers + research
-3. User reacts → new requirements emerge
+3. User reacts -> new requirements emerge
 4. Ask 1-2 follow-up questions on the new requirements
 5. Repeat until the picture is clear
 
 **Depth calibration:** The number of cycles depends on task complexity. A simple feature may need 1 cycle (5 min). A major system overhaul may need 3-4 cycles (20 min). The sign that you're done: you can describe back to the user what they want to build, and they say "yes, exactly."
 
 **Three expert lenses** (weave into the freeflow, not separate blocks):
-
-- **Product lens:** "Users of similar apps typically expect X — should we include that?" / "From a UX perspective, the simplest flow would be..."
-- **Architecture lens:** "The current data model already supports X, so we can leverage that" / "This could be implemented as Z, which would also unlock future features"
-- **Domain lens:** "In [domain] apps, best practice for X is Y" / "Edge case to consider: [domain-specific insight]"
+- **Product lens:** "Users of similar apps typically expect X — should we include that?"
+- **Architecture lens:** "The current data model already supports X, so we can leverage that"
+- **Domain lens:** "In [domain] apps, best practice for X is Y"
 
 **One question at a time.** Combine questions with insights when natural, but don't overload.
 
@@ -130,35 +158,9 @@ Write spec to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`.
 
 ### Step 7: Spec Review (Claude + Codex PARALLEL)
 
-Launch BOTH in parallel:
+Launch BOTH in parallel. Use prompt template from `prompts/spec-reviewer.md`.
 
-**Claude subagent** — spec-document-reviewer (architecture, completeness, feasibility)
-
-**Codex** — spec review focused on technical correctness:
-```bash
-codex --approval-mode full-auto --quiet \
-  -p "$(cat <<'PROMPT'
-Review this design spec for a software feature.
-
-## Spec
-$(cat docs/superpowers/specs/SPEC_FILE.md)
-
-## Project context
-$(cat CLAUDE.md)
-
-Review for:
-1. Technical feasibility — can this be built as described?
-2. Missing pieces — what's not covered that should be?
-3. Contradictions — does anything conflict with the project context?
-4. Over-engineering — is anything unnecessary?
-
-Report:
-### Issues (must fix)
-### Suggestions
-### Verdict: APPROVE | NEEDS_REVISION
-PROMPT
-)" 2>&1
-```
+**Calibration:** Only flag issues that would cause real problems during planning or implementation. Check: Completeness, Consistency, Clarity, Scope, YAGNI. Do NOT flag style or formatting issues in specs.
 
 Fix issues from both reviewers. Re-review if NEEDS_REVISION.
 
@@ -169,8 +171,19 @@ Write plan to `docs/superpowers/plans/YYYY-MM-DD-<topic>.md`.
 **Plan structure:**
 - Break into sprints (logical chunks, each deployable independently)
 - Each sprint = 3-8 tasks
-- Each task has: files, steps, code, tests, commit message
-- Tasks within a sprint can be parallelized where independent
+
+**Bite-sized task granularity (CRITICAL):**
+Each step = 2-5 minutes of work. Break tasks down to atomic operations:
+- "Write the failing test for X behavior" — one step
+- "Run it to verify failure" — one step
+- "Implement minimal code to pass" — one step
+- "Run tests to verify pass" — one step
+- "Commit" — one step
+
+A medium feature plan should have 20-30+ steps, NOT 5-10 large tasks. If a step takes more than 5 minutes, it's too big — split it.
+
+**Each task has:** files, steps, code, tests, commit message
+**Tasks within a sprint can be parallelized where independent**
 
 ### Step 9: Plan Review (Claude + Codex PARALLEL)
 
@@ -183,7 +196,7 @@ Present the plan summary to user. This is the LAST interaction point before auto
 - Estimated PR count
 - "After approval, I'll execute all sprints autonomously and report when done."
 
-User says "go" → Phase 2 begins. No more questions.
+User says "go" -> Phase 2 begins. No more questions.
 
 ---
 
@@ -195,28 +208,58 @@ After user approves, execute continuously until all sprints are complete. Never 
 
 ```
 For each Sprint N:
-│
-├─ 1. Create branch: feat/<feature>-sprint-N
-│
-├─ 2. For each task (maximize parallel agents):
-│   ├─ Dispatch implementer (Claude Agent, background)
-│   ├─ On completion: spec review (Claude subagent)
-│   ├─ On spec pass: code quality review (Claude + Codex PARALLEL)
-│   └─ On quality pass: mark task complete
-│
-├─ 3. After all tasks in sprint: PRODUCT ACCEPTANCE REVIEW
-│   ├─ Run full test suite
-│   ├─ Launch Product Acceptance (Claude + Codex PARALLEL):
-│   │   ├─ Claude Product Agent: verify spec compliance from product perspective
-│   │   └─ Codex Product Agent: independent product review
-│   │   Both check: does the implementation match the original spec intent?
-│   │   Are there product gaps the code reviews missed?
-│   ├─ Fix any product issues found (auto, no user interaction)
-│   ├─ Push branch
-│   └─ Create PR with sprint summary + acceptance results
-│
-└─ 4. Start next sprint immediately (branch from previous)
+|
++-- 1. Create git worktree for isolation:
+|      git worktree add .worktrees/sprint-N feat/<feature>-sprint-N
+|      (Verify .worktrees/ is in .gitignore — add if missing)
+|
++-- 2. Run baseline tests in worktree before starting work
+|      (If baseline fails, note pre-existing failures and continue)
+|
++-- 3. For each task (maximize parallel agents):
+|      +-- Dispatch implementer (see prompts/implementer.md)
+|      +-- On completion: spec review (see prompts/spec-reviewer.md)
+|      +-- On spec pass: code quality review (see prompts/code-quality-reviewer.md)
+|      +-- On quality pass: VERIFY — run tests, read output, confirm pass
+|      +-- Mark task complete only with verification evidence
+|
++-- 4. After all tasks in sprint: PRODUCT ACCEPTANCE REVIEW
+|      +-- Run full test suite — paste output as evidence
+|      +-- Launch Product Acceptance (Claude + Codex PARALLEL)
+|      |      (see prompts/product-reviewer.md)
+|      +-- Fix any product issues found (auto, no user interaction)
+|      +-- Run tests AGAIN after fixes — verify still green
+|      +-- Push branch, create PR with sprint summary + acceptance results
+|
++-- 5. Clean up worktree:
+|      git worktree remove .worktrees/sprint-N
+|
++-- 6. Start next sprint immediately (next worktree from updated base)
 ```
+
+### Git Worktree Rules
+
+Worktrees provide sprint isolation — each sprint works in its own directory.
+
+**Setup (once per session):**
+```bash
+# Ensure .worktrees/ is gitignored
+grep -q '.worktrees/' .gitignore 2>/dev/null || echo '.worktrees/' >> .gitignore
+```
+
+**Per sprint:**
+```bash
+# Create worktree for sprint
+git worktree add .worktrees/sprint-N feat/<feature>-sprint-N
+
+# Work happens inside .worktrees/sprint-N/
+# All file paths in agent dispatches use this directory
+
+# After PR creation, clean up
+git worktree remove .worktrees/sprint-N
+```
+
+**Fallback:** If worktrees are unavailable (e.g., bare repo, permission issues), fall back to regular branch checkout. Note this in the completion report.
 
 ### Agent Dispatch Rules
 
@@ -226,6 +269,7 @@ For each Sprint N:
 - Use `model: sonnet` for mechanical tasks (1-2 files, clear spec)
 - Use default model for complex integration tasks
 - Maximum concurrent agents: limited only by task independence
+- All agents use prompt from `prompts/implementer.md`
 
 **Review optimization:**
 - For simple tasks (1-2 files, <50 lines changed): spec review only, skip code quality review
@@ -233,113 +277,44 @@ For each Sprint N:
 - For complex tasks (5+ files, new architecture): full review cycle (spec + Claude + Codex + product)
 - Product review: only for user-facing changes (UI, bot responses, API behavior)
 
+### Systematic Debugging
+
+When a test fails during execution, follow this protocol — never do "try random fixes until tests pass":
+
+1. **Investigate** — read the failure output, identify the failing assertion
+2. **Identify pattern** — is it a data issue, logic error, integration mismatch, or environment problem?
+3. **Form hypothesis** — state what you think is wrong and why, before touching code
+4. **Diagnostic instrumentation** — if unclear, add logging at component boundaries to trace data flow
+5. **Implement fix** — targeted fix based on the hypothesis
+6. **Verify** — run the specific failing test, confirm it passes, then run full suite
+
+If unfixable after 2 targeted attempts, mark as BLOCKED with diagnostic evidence and continue.
+
 ### Codex for Code Quality Review
 
-MANDATORY for complex tasks. Launch in parallel with Claude reviewer:
+MANDATORY for complex tasks. Launch in parallel with Claude reviewer.
+Use prompt template from `prompts/code-quality-reviewer.md`.
 
 ```bash
 codex --approval-mode full-auto --quiet \
-  -p "$(cat <<'PROMPT'
-You are reviewing code changes for quality.
-
-## Diff
-$(git diff BASE_SHA..HEAD_SHA)
-
-## What was implemented
-[Summary]
-
-## Review for:
-1. Bugs, logic errors, null safety
-2. Edge cases and failure modes
-3. Performance (N+1, O(n²), unnecessary queries)
-4. Security (injection, auth, data exposure)
-5. Test coverage and test quality
-
-Be specific — file:line references.
-
-### Critical (must fix)
-### Important (should fix)
-### Minor
-### Verdict: APPROVE | REQUEST_CHANGES
-PROMPT
-)" 2>&1
+  -p "PROMPT_CONTENT" 2>&1
 ```
 
 ### Product Acceptance Review (MANDATORY per sprint)
 
-After all tasks in a sprint pass code review, run Product Acceptance. This is the **most important review stage** — it verifies that what was built actually matches the spec INTENT, not just the technical requirements. Code can be technically clean but productively wrong.
+After all tasks pass code review, run Product Acceptance. This is the **most important review stage** — it verifies that what was built matches the spec INTENT, not just the technical requirements. Code can be technically clean but productively wrong.
 
-**Launch Claude + Codex product reviewers IN PARALLEL:**
+Launch Claude + Codex product reviewers IN PARALLEL using `prompts/product-reviewer.md`.
 
-**Claude Product Agent:**
-```
-Agent tool (general-purpose):
-  description: "Product acceptance review for Sprint N"
-  prompt: |
-    You are a Product Owner reviewing delivered work against the original specification.
-
-    ## Original Spec (what was promised)
-    [Full text of relevant spec sections]
-
-    ## What Was Built (sprint diff)
-    [git diff or file list with descriptions]
-
-    ## Review for PRODUCT FIT:
-    1. Does this implementation deliver what the spec described?
-    2. Are there spec requirements that were skipped or simplified?
-    3. Would the user be satisfied with this? What would confuse them?
-    4. Are there functional gaps — things that technically work but don't serve the user?
-    5. Data correctness: are amounts, dates, categories right for real-world use?
-
-    Report:
-    ### Spec Gaps (implemented differently or missing vs spec)
-    ### UX Concerns (user would be confused or frustrated)
-    ### Data Integrity Issues (wrong amounts, dates, categories)
-    ### Verdict: ACCEPTED | NEEDS_FIXES
-```
-
-**Codex Product Agent** (launched IN PARALLEL):
-```bash
-codex --approval-mode full-auto --quiet \
-  -p "$(cat <<'PROMPT'
-You are a Product Owner reviewing delivered software against its specification.
-
-## Spec
-$(cat docs/superpowers/specs/SPEC_FILE.md)
-
-## Changes delivered
-$(git diff SPRINT_BASE..HEAD --stat)
-$(git log SPRINT_BASE..HEAD --oneline)
-
-## Review for product fit:
-1. Does the code deliver what the spec promised?
-2. Are there gaps between spec intent and implementation?
-3. Would a real user be satisfied?
-4. Are there edge cases the spec covered but code doesn't handle?
-
-### Spec Gaps
-### UX Concerns
-### Verdict: ACCEPTED | NEEDS_FIXES
-PROMPT
-)" 2>&1
-```
-
-**Merge results from both.** If either says NEEDS_FIXES → fix autonomously → re-review. Only create PR after BOTH accept.
+**Merge results from both.** If either says NEEDS_FIXES -> fix autonomously -> re-review. Only create PR after BOTH accept.
 
 ### PR Creation Pattern
 
 Each sprint creates its own PR:
 
 ```bash
-# Branch naming
-git checkout -b feat/<feature>-sprint-1
-# ... do work ...
-git push -u origin feat/<feature>-sprint-1
-gh pr create --title "Sprint 1: <scope>" --body "..."
-
-# Next sprint branches from previous
-git checkout -b feat/<feature>-sprint-2
-# ... do work ...
+git push -u origin feat/<feature>-sprint-N
+gh pr create --title "Sprint N: <scope>" --body "..."
 ```
 
 PR body format:
@@ -349,12 +324,9 @@ PR body format:
 ### Changes
 - [bullet points of what was built]
 
-### New files
-- [list]
-
-### Tests
-- X/Y tests passing
-- [coverage notes]
+### Verification Evidence
+- Test suite: X/Y passing (full output reviewed)
+- Product acceptance: ACCEPTED by Claude + Codex
 
 ### Dependencies
 - Depends on: PR #NNN (Sprint N-1) — merge that first
@@ -363,7 +335,7 @@ PR body format:
 
 ### Handling Failures During Autonomous Execution
 
-**Test failure:** Fix in-place, don't stop sprint. If unfixable after 2 attempts, note in PR description and continue.
+**Test failure:** Investigate root cause using systematic debugging protocol. Fix in-place, don't stop sprint. If unfixable after 2 targeted attempts, note in PR description with diagnostic evidence and continue.
 
 **Build failure:** Check if it's pre-existing (ignore) or new (fix). If new and unfixable, note and continue.
 
@@ -381,19 +353,18 @@ When ALL sprints are done, report to user:
 ### PRs Created
 1. #NNN — Sprint 1: [scope] — [status: ready for review]
 2. #NNN — Sprint 2: [scope] — [status: ready for review]
-...
 
-### Test Results
-- Total: X/Y passing
+### Verification Evidence
+- Full test suite: X/Y passing
 - New tests added: Z
+- All PRs passed product acceptance review
 
 ### Known Issues
-- [any accumulated issues/notes]
+- [any accumulated issues with diagnostic evidence]
 
 ### Merge Order
 1. Merge PR #NNN first (no dependencies)
 2. Then PR #NNN (depends on #1)
-...
 ```
 
 ---
@@ -429,31 +400,25 @@ At the very beginning of the session (Step 1), run:
 which codex 2>/dev/null && codex --version 2>/dev/null
 ```
 
-If codex is found and responds → set `CODEX_AVAILABLE=true`:
-- Use Codex for all parallel reviews (spec, plan, code quality, product acceptance)
-- Log: "Codex detected — dual-provider reviews enabled"
+If codex is found -> set `CODEX_AVAILABLE=true` and use for all parallel reviews.
+If codex is NOT found -> set `CODEX_AVAILABLE=false`, skip silently, use Claude-only.
 
-If codex is NOT found or errors → set `CODEX_AVAILABLE=false`:
-- Skip all Codex invocations silently
-- Use Claude-only for all reviews (still effective, just single-provider)
-- Note in completion report: "Codex was unavailable — reviews were Claude-only"
-
-**Never fail or warn the user about missing Codex.** It's a bonus, not a requirement. The workflow works fully with Claude alone.
+**Never fail or warn the user about missing Codex.** It's a bonus, not a requirement.
 
 ---
 
 ## Red Flags — Things That Must NEVER Happen
 
 1. **Pausing to ask "should I continue?"** — After plan approval, execute silently
-2. **Offering visual companion** — Just use it if relevant
-3. **Asking "want to review the spec?"** — If review passed, move on
-4. **Pausing between sprints** — Start next sprint immediately
-5. **One giant PR** — Always PR per sprint
-6. **Skipping Codex reviews** — Always try Codex first
-7. **2 agents when 5 could run** — Maximize parallelism
-8. **Only asking questions, no suggestions** — Always propose ideas alongside questions
-9. **Committing directly to main** — Always feature branches
-10. **Force-pushing without user consent** — Never destructive git ops
+2. **Claiming done without test output** — Paste evidence or it didn't happen
+3. **Skipping the "verify fail" step in TDD** — A test that never failed proves nothing
+4. **One giant PR** — Always PR per sprint
+5. **Skipping Codex reviews** — Always try Codex first if available
+6. **2 agents when 5 could run** — Maximize parallelism
+7. **Only asking questions, no suggestions** — Always propose ideas alongside questions
+8. **Committing directly to main** — Always feature branches
+9. **Random fix attempts** — Investigate before fixing. Hypothesis before code.
+10. **"Should work" without evidence** — Run it. Read output. Then claim.
 
 ---
 
@@ -463,10 +428,8 @@ After the last sprint's PR is created, before the completion report:
 
 1. **Update CLAUDE.md** — add new modules, files, conventions introduced by this work
 2. **Update README** (if project has one) — add new features, API endpoints, commands
-3. **Update BACKLOG.md** (if exists) — mark completed items, add new items discovered during implementation
+3. **Update BACKLOG.md** (if exists) — mark completed items, add new items discovered
 4. **Commit documentation updates** to the last sprint's branch
-
-This ensures the project's documentation reflects the new reality. The agent should NOT ask permission — just update docs as part of the autonomous flow.
 
 ---
 
@@ -474,13 +437,17 @@ This ensures the project's documentation reflects the new reality. The agent sho
 
 SuperFlow uses these superpowers skills internally:
 - `superpowers:brainstorming` — base flow, extended with multi-expert lenses
-- `superpowers:writing-plans` — plan structure and review templates
+- `superpowers:writing-plans` — plan structure, bite-sized granularity
 - `superpowers:subagent-driven-development` — agent dispatch patterns
-- `superpowers:test-driven-development` — TDD within tasks
-- `superpowers:verification-before-completion` — run tests before PRs
+- `superpowers:test-driven-development` — TDD within tasks (see `prompts/implementer.md`)
+- `superpowers:verification-before-completion` — Rule 6, evidence-based completion
+- `superpowers:using-git-worktrees` — sprint isolation via worktrees
+- `superpowers:debugging` — systematic debugging protocol
 
 SuperFlow OVERRIDES these superpowers behaviors:
 - Brainstorming: adds proactive product suggestions (not just questions)
 - Plan execution: PR per sprint (not one PR for everything)
+- Plan granularity: 2-5 minute steps, 20-30+ per feature (not 5-10 big tasks)
 - Review: mandatory Codex parallel review (not Claude-only)
+- Completion: requires verification evidence (not self-reported status)
 - Pacing: zero pauses after plan approval (not "check with user between tasks")

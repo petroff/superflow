@@ -29,16 +29,34 @@ DO:
 - Check for missing pieces they claimed to implement
 - Look for extra features not in spec
 
+## Calibration
+
+Only flag issues that would cause real problems during integration or for users.
+
+CHECK for:
+1. **Completeness** — anything in the spec that was skipped or not implemented?
+2. **Consistency** — does the implementation contradict other parts of the spec?
+3. **Clarity** — any ambiguous interpretations that could cause bugs?
+4. **Scope** — anything built that wasn't requested? Over-engineering?
+5. **YAGNI** — unnecessary abstractions, config options, or future-proofing?
+
+DO NOT flag:
+- Style issues in implementation (that's code quality review's job)
+- Formatting or naming preferences
+- "I would have done it differently" without a concrete problem
+
 ## Verify
 
 1. **Missing requirements** — anything skipped or not implemented?
 2. **Extra work** — anything built that wasn't requested? Over-engineering?
 3. **Misunderstandings** — requirements interpreted differently than intended?
 4. **Tests** — do tests cover the specified behaviors?
+5. **Verification evidence** — did the implementer provide actual test output?
 
 ## Report
 
-- ✅ Spec compliant — implementation matches spec
-- ❌ Issues found:
+- PASS — implementation matches spec, verification evidence provided
+- FAIL — issues found:
   - [what's missing/extra/wrong, with file:line references]
+  - [concrete impact: what breaks or what user experiences incorrectly]
 ```

@@ -66,3 +66,42 @@ Every finding must include a concrete scenario:
 ### Data Integrity
 ### Verdict: ACCEPTED | NEEDS_FIXES
 ```
+
+## Codex Parallel Review
+
+When dispatching to Codex in parallel:
+
+```bash
+codex --approval-mode full-auto --quiet \
+  -p "$(cat <<'PROMPT'
+You are a Product Owner reviewing delivered software against its specification.
+
+## Spec
+$(cat docs/superpowers/specs/SPEC_FILE.md)
+
+## Changes delivered
+$(git diff SPRINT_BASE..HEAD --stat)
+$(git log SPRINT_BASE..HEAD --oneline)
+
+## Review for product fit:
+1. Does the code deliver what the spec promised?
+2. Are there gaps between spec intent and implementation?
+3. Would a real user be satisfied?
+4. Are there edge cases the spec covered but code doesn't handle?
+
+### Spec Gaps
+### UX Concerns
+### Verdict: ACCEPTED | NEEDS_FIXES
+PROMPT
+)" 2>&1
+```
+
+## When Product Review Finds Issues
+
+Product issues are fix-or-justify:
+1. **Implementer fixes** — if the fix is within task scope
+2. **Note for future** — if the fix requires scope expansion (new task)
+3. **Justify** — if the reviewer's concern is addressed by design decisions
+
+The orchestrator decides which path. Product reviewer concerns about
+scope expansion should be captured as new tasks, not blocked on.

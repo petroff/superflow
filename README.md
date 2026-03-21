@@ -8,33 +8,33 @@ Most AI coding workflows are either too hands-on (you babysit every step) or too
 
 **Phase 1 — You talk, agent listens and proposes.** Freeflow product conversation with research, expert lenses, and proactive suggestions. The agent doesn't just ask questions — it proposes ideas, challenges assumptions, and brings best practices from the domain. This phase takes time, and that's intentional.
 
-**Phase 2 — You say "go", agent executes autonomously.** Zero interaction until done. The agent creates a PR per sprint, uses parallel subagents for implementation, runs dual-provider reviews (Claude + Codex), and does product acceptance testing. You get a report with ready-to-merge PRs at the end.
+**Phase 2 — You say "go", agent executes autonomously.** Zero interaction until done. The agent creates a PR per sprint using git worktrees for isolation, uses parallel subagents for implementation, runs dual-provider reviews (Claude + Codex), enforces test-first development, requires verification evidence before any completion claim, and does product acceptance testing. You get a report with ready-to-merge PRs at the end.
 
 ## What a Session Looks Like
 
 ```
-You: "суперфлоу — хочу прокачать аналитику в финтрекере"
+You: "superflow — I want to upgrade analytics in fintracker"
 
 Agent: [silently reads codebase, launches research agents]
 Agent: [asks about your vision, proposes ideas from competitor analysis]
 Agent: [presents 2-3 approaches, recommends one]
 Agent: [presents design section by section]
 Agent: [writes spec, reviews with Claude + Codex in parallel, fixes issues]
-Agent: [writes implementation plan, reviews, fixes]
-Agent: "Plan ready — 4 sprints, 16 tasks, ~4 PRs. Go?"
+Agent: [writes implementation plan with bite-sized steps, reviews, fixes]
+Agent: "Plan ready — 4 sprints, 28 steps, ~4 PRs. Go?"
 
-You: "давай"
+You: "go"
 
-Agent: [executes Sprint 1 → creates PR #1]
-        [executes Sprint 2 → creates PR #2]
-        [executes Sprint 3 → creates PR #3]
-        [executes Sprint 4 → creates PR #4]
+Agent: [creates worktree, executes Sprint 1 → verifies tests → creates PR #1]
+        [creates worktree, executes Sprint 2 → verifies tests → creates PR #2]
+        [creates worktree, executes Sprint 3 → verifies tests → creates PR #3]
+        [creates worktree, executes Sprint 4 → verifies tests → creates PR #4]
 
 Agent: "Done. 4 PRs ready:
-        #169 — Balance Engine (488 tests passing)
-        #170 — Analytics API
-        #171 — Bot Tools v3
-        #172 — Dashboard Overhaul
+        #169 — Balance Engine (488 tests passing — verified)
+        #170 — Analytics API (all green — verified)
+        #171 — Bot Tools v3 (all green — verified)
+        #172 — Dashboard Overhaul (all green — verified)
         Merge in order: #169 → #170 → #171 → #172"
 ```
 
@@ -49,7 +49,7 @@ Agent: "Done. 4 PRs ready:
 | 5 | Design presentation | **Yes — discussion** |
 | 6 | Write spec document | No |
 | 7 | Spec review (Claude + Codex parallel) | No |
-| 8 | Write implementation plan | No |
+| 8 | Write implementation plan (bite-sized steps) | No |
 | 9 | Plan review (Claude + Codex parallel) | No |
 | 10 | Your approval to start | **Yes — "go"** |
 
@@ -60,7 +60,7 @@ Agent: "Done. 4 PRs ready:
 Freeflow with product focus — not a rigid checklist. The agent:
 - Asks about your **vision** before technical details (WHY before HOW)
 - Requests **references** (apps, screenshots, competitors)
-- Uses a **question → proposal → question** rhythm: asks a few questions, then proposes ideas based on answers + research, then follows up on your reactions
+- Uses a **question -> proposal -> question** rhythm: asks a few questions, then proposes ideas based on answers + research, then follows up on your reactions
 - Adapts depth to complexity: 1 cycle for a simple feature, 3-4 for a major overhaul
 - Weaves in three expert lenses naturally: product, architecture, domain
 
@@ -70,31 +70,39 @@ After "go", the agent runs continuously without interaction:
 
 ```
 For each Sprint:
-├── Create branch: feat/<feature>-sprint-N
-├── Implement tasks (maximum parallel agents)
-│   ├── Per task: implement → spec review → code quality review (Claude + Codex)
-│   └── Fix issues autonomously
-├── Product Acceptance Review (Claude + Codex parallel)
-│   └── Verify implementation matches spec intent, not just technical requirements
-├── Run tests, push, create PR
-└── Start next sprint immediately
++-- Create git worktree: .worktrees/sprint-N (isolated environment)
++-- Run baseline tests (verify clean starting state)
++-- Implement tasks (maximum parallel agents, TDD cycle)
+|   +-- Per task: write failing test -> verify fail -> implement -> verify pass
+|   +-- Spec review -> code quality review (Claude + Codex)
+|   +-- Verify: run tests, paste output as evidence
++-- Product Acceptance Review (Claude + Codex parallel)
+|   +-- Verify implementation matches spec intent
++-- Run full test suite, push, create PR
++-- Clean up worktree
++-- Start next sprint immediately
 ```
 
 ### Key Behaviors
 
 - **PR per sprint** — never one giant PR. Each is reviewable and deployable independently
+- **Git worktrees** — each sprint runs in an isolated worktree for safety
+- **Test-first development** — write failing test, verify failure, implement, verify pass. Never skip steps
+- **Verification discipline** — no completion claims without actual test output as evidence
 - **Max parallelism** — 5 agents if 5 tasks are independent. Never serialize independent work
 - **Dual-provider reviews** — Claude + Codex review in parallel. Different models catch different bugs
-- **Product acceptance** — after code review passes, product agents verify the implementation matches the *intent* of the spec, not just the letter. Code can be technically clean but productively wrong
+- **Product acceptance** — after code review passes, product agents verify the implementation matches the *intent* of the spec
+- **Systematic debugging** — when tests fail, investigate root cause before attempting fixes
 - **Never stops** — accumulates issues and reports at the end. Never asks "should I continue?"
 
-## 5 Rules
+## 6 Rules
 
 1. **NEVER pause** during autonomous execution
 2. **ALWAYS use Codex** for reviews (parallel with Claude)
 3. **PR per sprint** — smaller PRs, easier to review
 4. **Maximum parallelism** — use all available agents
 5. **Proactive product thinking** — propose ideas, don't just ask questions
+6. **No claims without evidence** — verification output required for every completion
 
 ## Install
 
@@ -104,10 +112,9 @@ git clone https://github.com/egerev/superflow.git
 ln -s $(pwd)/superflow ~/.claude/skills/superflow
 
 # Option 2: Just copy files
-mkdir -p ~/.claude/skills/superflow
+mkdir -p ~/.claude/skills/superflow/prompts
 cp superflow/SKILL.md ~/.claude/skills/superflow/
-cp superflow/product-reviewer-prompt.md ~/.claude/skills/superflow/
-cp superflow/codex-dispatch.md ~/.claude/skills/superflow/
+cp superflow/prompts/*.md ~/.claude/skills/superflow/prompts/
 ```
 
 ## Requirements
@@ -120,9 +127,12 @@ cp superflow/codex-dispatch.md ~/.claude/skills/superflow/
 
 | File | Purpose |
 |------|---------|
-| `SKILL.md` | Main skill definition — loaded by Claude Code |
-| `product-reviewer-prompt.md` | Product review agent template |
-| `codex-dispatch.md` | Codex CLI invocation patterns |
+| `SKILL.md` | Main skill definition — orchestrator loaded by Claude Code |
+| `prompts/implementer.md` | Implementation agent template with TDD enforcement |
+| `prompts/spec-reviewer.md` | Spec compliance reviewer with calibration rules |
+| `prompts/code-quality-reviewer.md` | Code quality reviewer with anti-noise rules + Codex template |
+| `prompts/product-reviewer.md` | Product acceptance reviewer + Codex template |
+| `prompts/testing-guidelines.md` | Testing anti-patterns and best practices reference |
 
 ## Origin
 
@@ -135,6 +145,9 @@ Built during a real session: analytics engine for a family finance tracker. 16 t
 | Always use Codex | Rule existed but wasn't enforced — Codex was never invoked |
 | Proactive thinking | Brainstorming was one-sided — only questions, no proposals |
 | Product acceptance | Code passed technical review but missed product intent |
+| Verification evidence | Agent claimed "tests pass" without running them |
+| Git worktrees | Sprint branches interfered with each other during parallel work |
+| Systematic debugging | Agent tried random fixes instead of investigating root cause |
 
 ## License
 
