@@ -1,6 +1,6 @@
 # superflow
 
-**v1.2.0** · A Claude Code skill for autonomous product-to-production development.
+**v1.3.0** · A Claude Code skill for autonomous product-to-production development.
 
 Combines collaborative product discovery with fully autonomous execution — you discuss what to build, then the agent builds it end-to-end without stopping.
 
@@ -174,9 +174,9 @@ cp superflow/prompts/*.md ~/.claude/skills/superflow/prompts/
 ## Requirements
 
 - **Claude Code CLI** — the host environment
-- **Codex CLI** (optional but recommended) — `npm install -g @openai/codex` + `OPENAI_API_KEY` env var. Enables dual-provider reviews. Without it, reviews are Claude-only
+- **Codex CLI** (optional but recommended) — `npm install -g @openai/codex` + `OPENAI_API_KEY` env var. Enables dual-provider reviews. Without Codex, superflow falls back to two Claude agents with split review focus (technical vs product) instead of skipping reviews
 - **GitHub CLI** (`gh`) — for PR creation
-- **macOS users**: `brew install coreutils` — provides `gtimeout` for Codex timeout management
+- **macOS users**: `brew install coreutils` provides `gtimeout` for Codex timeout management. If coreutils is unavailable, superflow falls back to a Perl-based timeout (`perl -e 'alarm N; exec @ARGV'`) which works on any system with Perl (including stock macOS)
 
 ## Files
 

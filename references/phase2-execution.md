@@ -58,7 +58,7 @@ For each Sprint N:
 |          Return ACCEPTED or NEEDS_FIXES.", run_in_background=true)
 |
 |      ACTION B: Dispatch Codex reviewer (product + spec compliance):
-|        gtimeout 600 codex exec --full-auto "Read spec at [path]. Then run git diff [base]. Review for:
+|        $TIMEOUT_CMD 600 codex exec --full-auto "Read spec at [path]. Then run git diff [base]. Review for:
 |          1. Spec compliance — does implementation match spec?
 |          2. Product: does it solve the user's problem?
 |          3. UX gaps: uncovered flows, edge cases
@@ -99,6 +99,13 @@ For each Sprint N:
 - Simple tasks (1-2 files, <50 lines): spec review only
 - Medium tasks (2-5 files): spec review + Claude code quality
 - Complex tasks (5+ files): full review cycle (spec + Claude + Codex + product)
+
+**When Codex is unavailable** (not installed or `codex --version` fails):
+Do NOT skip the second reviewer. Instead, dispatch **two Claude agents** with split focus:
+- **Agent A (Technical):** security, architecture, performance, correctness, error handling
+- **Agent B (Product):** spec compliance, UX gaps, edge cases, data integrity
+Both run in parallel via Agent tool with `run_in_background: true`.
+Record evidence as: `{"claude_technical":"ACCEPTED","claude_product":"ACCEPTED",...}`
 
 ## Git Worktree Rules
 

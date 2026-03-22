@@ -65,7 +65,7 @@ When dispatching to Codex in parallel, use this invocation:
 
 ```bash
 codex --approval-mode full-auto --quiet \
-  -p "$(cat <<'PROMPT'
+  -p "$(cat <<PROMPT
 You are reviewing code changes for quality.
 
 ## Diff

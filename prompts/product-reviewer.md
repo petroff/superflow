@@ -73,7 +73,7 @@ When dispatching to Codex in parallel:
 
 ```bash
 codex --approval-mode full-auto --quiet \
-  -p "$(cat <<'PROMPT'
+  -p "$(cat <<PROMPT
 You are a Product Owner reviewing delivered software against its specification.
 
 ## Spec

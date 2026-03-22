@@ -36,10 +36,11 @@ isolated context windows — preventing overflow and ensuring each sprint gets f
 At session start, before anything else:
 
 1. Read `.claude/rules/superflow-enforcement.md`
-2. Detect Codex: `which codex 2>/dev/null && codex --version 2>/dev/null`
-3. Detect Telegram: check if `mcp__plugin_telegram_telegram__reply` is available
-4. Detect mode: existing code = Enhancement, empty repo = Greenfield
-5. Read CLAUDE.md and project docs
+2. Detect Codex: `codex --version 2>/dev/null` (binary can exist without API keys — test actual invocation)
+3. Detect timeout command (see [Timeout Helper](#timeout-helper))
+4. Detect Telegram: check if `mcp__plugin_telegram_telegram__reply` is available
+5. Detect mode: existing code = Enhancement, empty repo = Greenfield
+6. Read CLAUDE.md and project docs
 
 ---
 
@@ -93,9 +94,9 @@ Summary:
 3. **Codex Ideas** — dispatch Codex as product expert (parallel with brainstorming)
 4. **Brainstorming** — freeflow with product focus, questions → proposals → questions
 5. **Product Summary** — present features, problems solved, scope → **user approves**
-6. **Spec Document** — write to `docs/superpowers/specs/`
+6. **Spec Document** — `mkdir -p docs/superpowers/specs` then write to `docs/superpowers/specs/`
 7. **Spec Review** — Claude + Codex in parallel
-8. **Implementation Plan** — write to `docs/superpowers/plans/`
+8. **Implementation Plan** — `mkdir -p docs/superpowers/plans` then write to `docs/superpowers/plans/`
 9. **Plan Review** — Claude + Codex in parallel
 10. **User Approval** — last interaction before autonomous execution
 
@@ -144,17 +145,40 @@ Sprint N:
 
 ## Codex Integration
 
-Detect at startup: `which codex && codex --version`
+Detect at startup: `codex --version 2>/dev/null` (not just `which codex` — binary can exist without API keys).
 
 Use for: spec review, plan review, code quality review (complex tasks).
-If Codex is unavailable, proceed with Claude-only reviews silently.
+
+**When Codex is unavailable**, do NOT skip reviews. Instead, dispatch **two Claude agents** with split focus:
+- **Agent A (Technical):** security, architecture, performance, correctness
+- **Agent B (Product):** spec compliance, UX gaps, edge cases, data integrity
+
+Two agents with different prompts catch more than one generalist reviewer.
 
 ```bash
-# macOS:
-gtimeout 600 codex exec --full-auto "PROMPT" 2>&1
-# Linux:
-timeout 600 codex exec --full-auto "PROMPT" 2>&1
+# Use the timeout helper (see below):
+$TIMEOUT_CMD 600 codex exec --full-auto "PROMPT" 2>&1
 ```
+
+---
+
+## Timeout Helper
+
+Detect once at startup and set `TIMEOUT_CMD`:
+
+```bash
+if command -v gtimeout &>/dev/null; then
+  TIMEOUT_CMD="gtimeout"
+elif command -v timeout &>/dev/null; then
+  TIMEOUT_CMD="timeout"
+else
+  # Universal fallback — works on any system with Perl (including macOS)
+  timeout_fallback() { perl -e 'alarm shift; exec @ARGV' "$@"; }
+  TIMEOUT_CMD="timeout_fallback"
+fi
+```
+
+Use `$TIMEOUT_CMD 600 codex exec ...` everywhere instead of hardcoding `gtimeout` or `timeout`.
 
 ---
 

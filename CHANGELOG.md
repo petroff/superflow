@@ -2,6 +2,18 @@
 
 All notable changes to superflow will be documented in this file.
 
+## [1.3.0] - 2026-03-22
+
+### Fixed
+- Codex detection: replaced `which codex` with `codex --version 2>/dev/null` smoke test (binary can exist without API keys)
+- Heredoc templates in code-quality-reviewer.md and product-reviewer.md: changed `<<'PROMPT'` (quoted, blocks variable expansion) to `<<PROMPT` (unquoted, allows `$(git diff ...)` to expand)
+
+### Added
+- Provider-agnostic review fallback: when Codex is unavailable, dispatch TWO Claude agents with split focus (technical + product) instead of skipping reviews
+- macOS timeout fallback: `perl -e 'alarm N; exec @ARGV'` as universal fallback when neither `timeout` nor `gtimeout` is available. All timeout references now use `$TIMEOUT_CMD` variable
+- Timeout Helper section in SKILL.md with startup detection snippet (gtimeout > timeout > perl fallback)
+- `mkdir -p` for spec and plan directories before writing files (prevents failure on first run)
+
 ## [1.2.0] - 2026-03-21
 
 ### Added

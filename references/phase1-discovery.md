@@ -28,7 +28,7 @@ Before brainstorming, launch parallel research agents to gather external context
 If Codex is available, dispatch it to generate product ideas independently:
 
 ```bash
-gtimeout 600 codex exec --full-auto "You are a Product Expert. Given this context about [project] and [research], propose 3-5 concrete product improvements. For each: what, why it matters, how it could work." 2>&1
+$TIMEOUT_CMD 600 codex exec --full-auto "You are a Product Expert. Given this context about [project] and [research], propose 3-5 concrete product improvements. For each: what, why it matters, how it could work." 2>&1
 ```
 
 Run IN PARALLEL with brainstorming. Two models produce different ideas.
@@ -99,6 +99,10 @@ For each approach: what's good, what's risky, what's the effort level.
 
 ## Step 6: Spec Document
 
+```bash
+mkdir -p docs/superpowers/specs
+```
+
 Write spec to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`.
 
 ## Step 7: Spec Review (Claude + Codex PARALLEL)
@@ -107,6 +111,10 @@ Launch BOTH in parallel. Use `prompts/spec-reviewer.md`.
 Fix issues. Re-review if NEEDS_REVISION.
 
 ## Step 8: Implementation Plan
+
+```bash
+mkdir -p docs/superpowers/plans
+```
 
 Write plan to `docs/superpowers/plans/YYYY-MM-DD-<topic>.md`.
 
