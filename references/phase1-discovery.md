@@ -28,12 +28,16 @@ Before brainstorming, launch parallel research agents to gather external context
 If Codex is available, dispatch it to generate product ideas independently:
 
 ```bash
-gtimeout 300 codex exec --full-auto "You are a Product Expert. Given this context about [project] and [research], propose 3-5 concrete product improvements. For each: what, why it matters, how it could work." 2>&1
+gtimeout 600 codex exec --full-auto "You are a Product Expert. Given this context about [project] and [research], propose 3-5 concrete product improvements. For each: what, why it matters, how it could work." 2>&1
 ```
 
 Run IN PARALLEL with brainstorming. Two models produce different ideas.
 
 ## Step 3: Multi-Expert Brainstorming
+
+**STOP GATE:** After research completes, your NEXT action MUST be a question or proposal
+to the user. Do NOT jump to Product Summary. Do NOT synthesize research into a ready plan.
+The point of brainstorming is to discover things the research DIDN'T cover.
 
 **Format:** Freeflow conversation with product focus.
 
@@ -46,6 +50,11 @@ Run IN PARALLEL with brainstorming. Two models produce different ideas.
 **Rhythm: questions → proposals → questions**
 After gathering context (3-5 questions), make concrete product proposals. Let user react. This generates requirements you wouldn't have found by asking.
 
+**Proposals must be GENUINELY NEW ideas** — not rephrasing what the user already wrote in
+BACKLOG.md or told you earlier. If you can trace an idea back to the user's own words,
+it's not a brainstorm contribution. Bring ideas from: research findings, analogous products,
+architectural opportunities the user hasn't considered, or cross-domain patterns.
+
 **Three expert lenses** (weave into freeflow):
 - **Product:** "Users of similar apps typically expect X — should we include that?"
 - **Architecture:** "The current data model already supports X, we can leverage it"
@@ -55,7 +64,11 @@ After gathering context (3-5 questions), make concrete product proposals. Let us
 
 ## Step 4: Approaches + Recommendation
 
+**DO NOT SKIP THIS STEP.** Even if you're confident in one approach, present at least 2
+alternatives with trade-offs. This forces you to consider options the user may prefer.
+
 Propose 2-3 approaches with trade-offs. Lead with your recommendation. Be opinionated.
+For each approach: what's good, what's risky, what's the effort level.
 
 ## Step 5: Product Summary (USER APPROVAL GATE)
 

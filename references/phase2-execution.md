@@ -21,6 +21,7 @@ All implementation happens in subagents with isolated context windows.
 For each Sprint N:
 |
 +-- 1. Re-read this file (references/phase2-execution.md)
+|      WHY: context compaction erases skill content. You WILL forget steps without re-reading.
 |
 +-- 2. Create git worktree:
 |      git worktree add .worktrees/sprint-N feat/<feature>-sprint-N
@@ -39,21 +40,34 @@ For each Sprint N:
 |      +-- On quality pass: VERIFY — run tests, read output
 |      +-- Mark task complete only with verification evidence
 |
-+-- 5. After all tasks: PRODUCT ACCEPTANCE REVIEW
-|      +-- Run full test suite — paste output as evidence
-|      +-- Launch Claude Agent reviewer (background)
-|      +-- Launch Codex reviewer (background, gtimeout on macOS)
-|      +-- Wait for both. Fix issues if any. Re-test.
-|      +-- Only create PR after acceptance
++-- 5. Run full test suite — paste actual output
 |
-+-- 6. Push branch, create PR targeting main
++-- 6. ██ PRODUCT ACCEPTANCE REVIEW (MANDATORY — DO NOT SKIP) ██
+|      This is NOT a checklist item. This is a CONCRETE ACTION you must perform.
+|      You CANNOT proceed to step 7 without completing this step.
 |
-+-- 7. Clean up worktree:
+|      ACTION A: Dispatch Claude product reviewer NOW:
+|        Agent(prompt=<product-reviewer prompt with spec + diff>, run_in_background=true)
+|
+|      ACTION B: Dispatch Codex product reviewer NOW (if Codex detected at startup):
+|        gtimeout 600 codex exec --full-auto "<review prompt>" 2>&1
+|        Codex timeout is NOT a reason to skip Codex on future sprints.
+|
+|      ACTION C: Wait for BOTH to return.
+|      ACTION D: If NEEDS_FIXES → fix → re-test → re-review.
+|      ACTION E: Only after ACCEPTED → proceed to step 7.
+|
+|      IF YOU ARE READING THIS AND THINKING "I'll skip it this time": that is
+|      the exact rationalization this step exists to prevent. DISPATCH NOW.
+|
++-- 7. Push branch, create PR targeting main
+|
++-- 8. Clean up worktree:
 |      git worktree remove .worktrees/sprint-N
 |
-+-- 8. If Telegram MCP connected: send progress update
++-- 9. If Telegram MCP connected: send progress update
 |
-+-- 9. Start next sprint immediately
++-- 10. Start next sprint immediately
 ```
 
 ## Agent Dispatch Rules
@@ -100,6 +114,9 @@ If unfixable after 2 attempts → BLOCKED with evidence, continue.
 
 **All PRs target `main`.** Never target other sprint branches.
 
+**GATE:** Before running `gh pr create`, verify you have completed Step 6 (Product Acceptance Review).
+If you cannot point to the PAR agent results in your current context, STOP and run PAR now.
+
 ```bash
 git push -u origin feat/<feature>-sprint-N
 gh pr create --base main --title "Sprint N: <scope>" --body "..."
@@ -115,7 +132,7 @@ gh pr create --base main --title "Sprint N: <scope>" --body "..."
 ## Completion Report
 
 ```
-## SuperFlow Complete
+## Superflow Complete
 
 ### PRs Created
 1. #NNN — Sprint 1: [scope]

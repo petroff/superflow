@@ -3,7 +3,7 @@ name: superflow
 description: "Use when user says 'superflow', 'суперфлоу', or asks for full dev workflow. Two phases: (1) collaborative Product Discovery with multi-expert brainstorming, (2) fully autonomous execution with PR-per-sprint, git worktrees, Codex reviews, max parallelism, and verification discipline."
 ---
 
-# SuperFlow — Product-to-Production Workflow
+# Superflow — Product-to-Production Workflow
 
 Two distinct phases: collaborative discovery, then autonomous execution.
 
@@ -73,7 +73,7 @@ At session start, before anything else:
 
 Before proceeding to the next phase or sprint, verify:
 
-- Am I following SuperFlow, or have I started improvising?
+- Am I following Superflow, or have I started improvising?
 - Am I about to write code directly? → Dispatch a subagent instead.
 - Did I create a git worktree for this sprint? → Create one if not.
 - Did I run tests and see passing output? → Run them if not.
@@ -151,9 +151,9 @@ If Codex is unavailable, proceed with Claude-only reviews silently.
 
 ```bash
 # macOS:
-gtimeout 300 codex exec --full-auto "PROMPT" 2>&1
+gtimeout 600 codex exec --full-auto "PROMPT" 2>&1
 # Linux:
-timeout 300 codex exec --full-auto "PROMPT" 2>&1
+timeout 600 codex exec --full-auto "PROMPT" 2>&1
 ```
 
 ---
