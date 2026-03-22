@@ -42,25 +42,41 @@ For each Sprint N:
 |
 +-- 5. Run full test suite — paste actual output
 |
-+-- 6. ██ PRODUCT ACCEPTANCE REVIEW (MANDATORY — DO NOT SKIP) ██
++-- 6. ██ PAR: PRODUCT ACCEPTANCE REVIEW (MANDATORY — DO NOT SKIP) ██
 |      This is NOT a checklist item. This is a CONCRETE ACTION you must perform.
 |      You CANNOT proceed to step 7 without completing this step.
 |
-|      ACTION A: Dispatch Claude product reviewer NOW:
-|        Agent(prompt=<product-reviewer prompt with spec + diff>, run_in_background=true)
+|      BOTH reviewers receive the SPEC FILE in their prompt. Not just "review code"
+|      but "review this diff AGAINST this spec." The spec is the source of truth.
 |
-|      ACTION B: Dispatch Codex product reviewer NOW (if Codex detected at startup):
-|        gtimeout 600 codex exec --full-auto "<review prompt>" 2>&1
-|        Codex timeout is NOT a reason to skip Codex on future sprints.
+|      ACTION A: Dispatch Claude reviewer (technical + security + spec compliance):
+|        Agent(prompt="Read spec at [path]. Then run git diff [base]. Review for:
+|          1. Spec compliance — does implementation match spec?
+|          2. Missing features from spec
+|          3. Security: auth, validation, injection, OWASP
+|          4. Architecture: patterns, coupling, performance
+|          Return ACCEPTED or NEEDS_FIXES.", run_in_background=true)
+|
+|      ACTION B: Dispatch Codex reviewer (product + spec compliance):
+|        gtimeout 600 codex exec --full-auto "Read spec at [path]. Then run git diff [base]. Review for:
+|          1. Spec compliance — does implementation match spec?
+|          2. Product: does it solve the user's problem?
+|          3. UX gaps: uncovered flows, edge cases
+|          4. Code quality: error handling, edge cases
+|          Return ACCEPTED or NEEDS_FIXES." 2>&1
 |
 |      ACTION C: Wait for BOTH to return.
 |      ACTION D: If NEEDS_FIXES → fix → re-test → re-review.
-|      ACTION E: Only after ACCEPTED → proceed to step 7.
+|      ACTION E: Only after ACCEPTED → create .par-evidence.json:
+|        echo '{"sprint":N,"claude":"ACCEPTED","codex":"ACCEPTED","ts":"'$(date -u +%FT%TZ)'"}' > .par-evidence.json
+|      ACTION F: Proceed to step 7.
 |
 |      IF YOU ARE READING THIS AND THINKING "I'll skip it this time": that is
 |      the exact rationalization this step exists to prevent. DISPATCH NOW.
 |
 +-- 7. Push branch, create PR targeting main
+|      GATE: Before `git push`, verify .par-evidence.json exists.
+|      The pre-push hook will block push if it's missing.
 |
 +-- 8. Clean up worktree:
 |      git worktree remove .worktrees/sprint-N
