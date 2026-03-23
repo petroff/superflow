@@ -2,6 +2,36 @@
 
 All notable changes to superflow will be documented in this file.
 
+## [3.1.0] - 2026-03-23
+
+### Added — Reasoning Tiers & Unified Review
+- **Reasoning Tier System** — three tiers (deep/standard/fast) with explicit `effort` frontmatter for Claude agents and `-c model_reasoning_effort` for Codex
+- **12 agent definition files** (`agents/`) — native Claude Code subagent `.md` files with YAML frontmatter (name, description, model, effort)
+- **3 Codex-optimized prompts** (`prompts/codex/`) — OpenAI Markdown+XML style for code-reviewer, product-reviewer, audit
+- **Unified Review** — merged Internal Review + PAR into single 4-agent parallel review (2 Claude + 2 Codex)
+- **Adaptive Implementation** — sprint complexity tags (simple/medium/complex) drive model selection (sonnet/opus)
+- **Codex audit agent** in Phase 0 — 5th parallel agent alongside 4 Claude analysts
+- **Final Holistic Review** expanded to 4 agents (was 2)
+- **Agent deployment** in SKILL.md startup checklist — handles pre-v3.1 projects
+- **Verdict vocabulary mapping** in enforcement rules — APPROVE/ACCEPTED/PASS all valid
+
+### Changed
+- Phase 2: 11 steps → 10 steps (Internal Review + PAR collapsed into Unified Review)
+- Phase 0: 10 steps → 11 steps (new Step 1: deploy agent definitions)
+- Enforcement Rule 3: 2-reviewer PAR → 4-agent Unified Review with `.par-evidence.json` 4-verdict schema
+- Enforcement Rule 9: 2 Opus reviewers → 4 reviewers (2 Claude + 2 Codex) for Final Holistic
+- Supervisor: 4-verdict PAR parsing, complexity extraction, reasoning tier template placeholders
+- All docs updated: SKILL.md, CLAUDE.md, README.md, llms.txt
+
+### Removed
+- `ultrathink` keyword from all subagent prompts (confirmed no-op in subagents via testing)
+
+### Research Findings
+- `ultrathink` in Agent tool prompts does NOT trigger high reasoning — it's a CLI-level keyword only
+- Agent tool does NOT have `effort` parameter — effort controlled via `.md` frontmatter files in `~/.claude/agents/`
+- `codex exec review` cannot combine `--base`/`--uncommitted` with `[PROMPT]` — use stdin for prompt injection
+- Codex `-c model_reasoning_effort` works per-invocation (verified: xhigh=435 tokens vs low=207 tokens output)
+
 ## [3.0.0] - 2026-03-23
 
 ### Added — Supervisor System (Long-Running Autonomy)

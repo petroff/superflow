@@ -76,6 +76,14 @@ Hybrid project: Markdown prompts drive Claude Code sessions; Python supervisor o
 | `examples/sprint-queue-example.json` | 42 | Queue file template for new users |
 | `tests/` | 2948 | 149 tests: unit (all modules) + integration (happy path, crash, retry) |
 
+## Release Process
+After Phase 3 merge, always:
+1. Bump version in `README.md` header (`# superflow vX.Y.Z`)
+2. Add CHANGELOG.md entry with Added/Changed/Removed sections
+3. Commit: `Bump to vX.Y.Z: <one-line summary>`
+4. Push to main
+5. Create GitHub release: `gh release create vX.Y.Z --title "vX.Y.Z" --notes "$(changelog entry)"`
+
 ## Conventions
 - Hybrid project: Markdown skill files (no dependencies) + Python supervisor (stdlib only, no pip install)
 - File references use relative paths from project root
