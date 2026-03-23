@@ -9,10 +9,37 @@ Four phases: onboarding, discovery, execution, merge.
 
 Phase 0 (auto, first run only): Detect markers > Analyze codebase (4 parallel agents) > Health report > Audit llms.txt & CLAUDE.md > Permissions > Markers > Checklist
 Phase 1 (with user, 12 steps): Context > Research (parallel agents) > Present findings > Brainstorm (STOP GATE) > Approaches > Product Summary (APPROVAL) > Brief > Spec > Spec Review (dual-model) > Plan > Plan Review (dual-model) > User Approval (FINAL GATE)
-Phase 2 (autonomous, 11 steps per sprint): Re-read > Telegram > Worktree > Baseline tests > Dispatch implementers > Internal review > Test verification > PAR > Push+PR > Cleanup > Telegram
+Phase 2 (autonomous, 10 steps per sprint): Re-read > Telegram > Worktree > Baseline tests > Dispatch implementers > Unified Review (4 agents) > Test verification > Push+PR > Cleanup > Telegram
 Phase 3 (user-initiated): Pre-merge checklist > Doc update > Sequential rebase merge (with CI failure handling) > Post-merge report
 
 Durable rules live in `.claude/rules/superflow-enforcement.md` (survives compaction).
+
+This is a hybrid project: markdown prompts + Python companion CLI (supervisor).
+
+## Architecture
+
+```
+superflow/
+  SKILL.md              — Skill entry point, startup checklist
+  superflow-enforcement.md — Durable rules for ~/.claude/rules/
+  bin/
+    superflow-supervisor — Python CLI for autonomous sprint orchestration
+  lib/
+    supervisor.py        — Core: worktree lifecycle, execution, run loop, completion report
+    queue.py             — Sprint queue with DAG dependency resolution
+    checkpoint.py        — Checkpoint save/load for crash recovery
+    parallel.py          — Parallel execution via ThreadPoolExecutor
+    replanner.py         — Adaptive replanner (adjusts remaining sprints)
+    notifications.py     — Telegram/stdout notifications
+  templates/
+    supervisor-sprint-prompt.md — Sprint execution prompt template
+    replan-prompt.md     — Replanner prompt template
+  agents/                — Agent definitions with effort frontmatter (12 definitions)
+  prompts/               — Agent prompt templates (7 prompts)
+    codex/               — Codex-specific prompts (3 prompts)
+  references/            — Phase documentation (phases 0-3)
+  tests/                 — Unit and integration tests (140+ tests)
+```
 
 ## Startup Checklist
 
@@ -20,9 +47,11 @@ Durable rules live in `.claude/rules/superflow-enforcement.md` (survives compact
 2. Detect secondary provider (see below)
 3. Detect timeout: `gtimeout` > `timeout` > perl fallback
 4. Detect Telegram MCP: `mcp__plugin_telegram_telegram__reply`
-5. Detect mode: existing code = Enhancement, empty repo = Greenfield
-6. **Run Phase 0** if first run (see detection in `references/phase0-onboarding.md`)
-7. Read CLAUDE.md and project docs
+5. Detect supervisor: `python3 -c "import sys; print(sys.version)" 2>/dev/null`
+6. Detect mode: existing code = Enhancement, empty repo = Greenfield
+7. **Deploy agent definitions** (if missing): `test -f ~/.claude/agents/deep-analyst.md || cp ~/.claude/skills/superflow/agents/*.md ~/.claude/agents/ 2>/dev/null`
+8. **Run Phase 0** if first run (see detection in `references/phase0-onboarding.md`)
+9. Read CLAUDE.md and project docs
 
 ## Secondary Provider Detection
 
@@ -53,5 +82,9 @@ fi
 - Prompts: `prompts/implementer.md`, `prompts/spec-reviewer.md`, `prompts/code-quality-reviewer.md`, `prompts/product-reviewer.md`
 - Documentation: `prompts/llms-txt-writer.md`, `prompts/claude-md-writer.md`
 - Testing: `prompts/testing-guidelines.md`
+- Agent definitions: `agents/deep-implementer.md`, `agents/standard-implementer.md`, `agents/fast-implementer.md`, `agents/deep-code-reviewer.md`, `agents/standard-code-reviewer.md`, `agents/deep-product-reviewer.md`, `agents/standard-product-reviewer.md`, `agents/deep-spec-reviewer.md`, `agents/standard-spec-reviewer.md`, `agents/deep-doc-writer.md`, `agents/standard-doc-writer.md`, `agents/deep-analyst.md`
+- Codex prompts: `prompts/codex/code-reviewer.md`, `prompts/codex/product-reviewer.md`, `prompts/codex/audit.md`
+- Supervisor: `bin/superflow-supervisor`, `lib/supervisor.py`, `lib/queue.py`, `lib/checkpoint.py`, `lib/parallel.py`, `lib/replanner.py`, `lib/notifications.py`
+- Templates: `templates/supervisor-sprint-prompt.md`, `templates/replan-prompt.md`
 
 Re-read phase docs at every phase/sprint boundary (compaction erases skill content).
