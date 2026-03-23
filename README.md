@@ -1,4 +1,4 @@
-# superflow v2.1.2
+# superflow v3.1.0
 
 Lightweight Claude Code skill for autonomous product-to-production development. Designed for modern models (Opus 4.6+) — minimal instructions, maximum autonomy.
 
@@ -6,11 +6,11 @@ Lightweight Claude Code skill for autonomous product-to-production development. 
 
 ## How It Works
 
-**Phase 0 — Onboarding** (interactive, first run only, 10 steps). 4 parallel Opus agents analyze the project, audit/create `llms.txt` + `CLAUDE.md` (Opus + ultrathink), produce health report, propose permissions. Skipped on subsequent runs (marker detection with backwards compatibility).
+**Phase 0 — Onboarding** (interactive, first run only, 11 steps). 5 parallel agents (4 Claude + 1 Codex) analyze the project, audit/create `llms.txt` + `CLAUDE.md` (agent definitions with effort frontmatter), produce health report, propose permissions. Skipped on subsequent runs (marker detection with backwards compatibility).
 
 **Phase 1 — Discovery** (interactive, 12 steps). Research with parallel agents, brainstorming (STOP GATE), approaches, product summary (APPROVAL GATE), product brief, spec, dual-model spec review, plan, dual-model plan review, user approval (FINAL GATE).
 
-**Phase 2 — Execution** (autonomous, zero interaction, 11 steps per sprint). PR per sprint, git worktrees, internal review + mandatory PAR, sprint completion checklist. Reports results in Demo Day format.
+**Phase 2 — Execution** (autonomous, zero interaction, 10 steps per sprint). PR per sprint, git worktrees, unified 4-agent review (2 Claude + 2 Codex, or 4 Claude split-focus), sprint completion checklist. Reports results in Demo Day format.
 
 **Phase 3 — Merge** (interactive, user-initiated). Pre-merge checklist, doc update, sequential rebase merges with CI failure recovery, post-merge report.
 
@@ -36,13 +36,13 @@ Agent: [Phase 3: update docs → merge PRs → cleanup]
 - **PR per sprint** — small, reviewable, deployable
 - **Git worktrees** — isolated workspace per sprint
 - **TDD** — write failing test → verify fail → implement → verify pass
-- **Dual-model reviews** — Claude + secondary provider (Codex/Gemini/other); split-focus Claude fallback
-- **PAR gate** — Product Acceptance Review before every push, `.par-evidence.json` required
+- **4-agent unified review** — 2 Claude + 2 Codex reviewers (code quality + product), or 4 Claude split-focus fallback
+- **Review gate** — unified review before every push, `.par-evidence.json` required
 - **llms.txt** — standard project documentation for all LLMs (llmstxt.org)
 - **Product brief** — Jobs to be Done + user stories before technical spec
 - **Verification discipline** — no claims without pasted test output
 - **Max parallelism** — parallelize independent tasks, sequentialize dependent ones
-- **Opus + ultrathink for docs** — CLAUDE.md and llms.txt audits use highest quality models to prevent hallucinated documentation
+- **Agent definitions with effort frontmatter** — CLAUDE.md and llms.txt audits use deep-doc-writer agent tier to prevent hallucinated documentation
 
 ## Install
 
@@ -96,10 +96,47 @@ docker run -it --rm -v $(pwd):/workspace -w /workspace node:22 bash
 
 ## Requirements
 
+- **Python 3.10+** (for supervisor features)
 - **Claude Code CLI**
 - **Secondary provider** (optional): Codex (`npm i -g @openai/codex`), Gemini CLI, or other
 - **GitHub CLI** (`gh`)
 - **macOS**: `brew install coreutils` for `gtimeout`
+
+## Supervisor
+
+The Supervisor is a Python companion CLI that orchestrates autonomous multi-sprint execution. It manages a sprint queue with DAG-based dependency resolution, creates isolated git worktrees per sprint, invokes Claude Code for each sprint, handles retries and failure recovery, and generates completion reports. Supports parallel execution of independent sprints and adaptive replanning between sprints.
+
+### Quick Start
+
+```bash
+./bin/superflow-supervisor run --queue path/to/sprint-queue.json
+```
+
+### CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `run --queue Q` | Execute the full sprint queue |
+| `status --queue Q` | Show current queue status table |
+| `resume --queue Q` | Resume after crash (detects PRs, resets stale sprints) |
+| `reset --queue Q --sprint N` | Reset sprint N to pending |
+
+Options: `--parallel N` (max concurrent sprints), `--timeout S` (seconds per sprint), `--plan FILE` (enable replanning), `--no-replan`, `--telegram-token`, `--telegram-chat`.
+
+### Example: Overnight Run with Telegram
+
+```bash
+export TELEGRAM_BOT_TOKEN="your-bot-token"
+export TELEGRAM_CHAT_ID="your-chat-id"
+
+./bin/superflow-supervisor run \
+  --queue sprint-queue.json \
+  --plan plans/feature-plan.md \
+  --parallel 2 \
+  --timeout 3600
+```
+
+You will receive Telegram notifications for sprint starts, completions, failures, and the final completion report.
 
 ## Files
 
@@ -111,7 +148,16 @@ docker run -it --rm -v $(pwd):/workspace -w /workspace node:22 bash
 | `references/phase2-execution.md` | Sprint execution (autonomous) |
 | `references/phase3-merge.md` | Merge flow (user-initiated) |
 | `prompts/*.md` | Agent templates (implementer, reviewers, doc writers) |
+| `templates/*.md` | Supervisor prompt templates (sprint execution, replanning) |
 | `superflow-enforcement.md` | Durable rules (copy to `~/.claude/rules/`) |
+| `bin/superflow-supervisor` | Supervisor CLI entry point |
+| `lib/supervisor.py` | Core supervisor: worktree lifecycle, sprint execution, run loop |
+| `lib/queue.py` | Sprint queue with DAG-based dependency resolution |
+| `lib/checkpoint.py` | Checkpoint save/load for crash recovery |
+| `lib/parallel.py` | Parallel sprint execution via ThreadPoolExecutor |
+| `lib/replanner.py` | Adaptive replanner (adjusts remaining sprints after completion) |
+| `lib/notifications.py` | Telegram/stdout notification system |
+| `tests/` | Unit and integration tests (140+ tests) |
 
 ## Origin
 

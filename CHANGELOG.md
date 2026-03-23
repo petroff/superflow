@@ -2,6 +2,75 @@
 
 All notable changes to superflow will be documented in this file.
 
+## [3.1.0] - 2026-03-23
+
+### Added — Reasoning Tiers & Unified Review
+- **Reasoning Tier System** — three tiers (deep/standard/fast) with explicit `effort` frontmatter for Claude agents and `-c model_reasoning_effort` for Codex
+- **12 agent definition files** (`agents/`) — native Claude Code subagent `.md` files with YAML frontmatter (name, description, model, effort)
+- **3 Codex-optimized prompts** (`prompts/codex/`) — OpenAI Markdown+XML style for code-reviewer, product-reviewer, audit
+- **Unified Review** — merged Internal Review + PAR into single 4-agent parallel review (2 Claude + 2 Codex)
+- **Adaptive Implementation** — sprint complexity tags (simple/medium/complex) drive model selection (sonnet/opus)
+- **Codex audit agent** in Phase 0 — 5th parallel agent alongside 4 Claude analysts
+- **Final Holistic Review** expanded to 4 agents (was 2)
+- **Agent deployment** in SKILL.md startup checklist — handles pre-v3.1 projects
+- **Verdict vocabulary mapping** in enforcement rules — APPROVE/ACCEPTED/PASS all valid
+
+### Changed
+- Phase 2: 11 steps → 10 steps (Internal Review + PAR collapsed into Unified Review)
+- Phase 0: 10 steps → 11 steps (new Step 1: deploy agent definitions)
+- Enforcement Rule 3: 2-reviewer PAR → 4-agent Unified Review with `.par-evidence.json` 4-verdict schema
+- Enforcement Rule 9: 2 Opus reviewers → 4 reviewers (2 Claude + 2 Codex) for Final Holistic
+- Supervisor: 4-verdict PAR parsing, complexity extraction, reasoning tier template placeholders
+- All docs updated: SKILL.md, CLAUDE.md, README.md, llms.txt
+
+### Removed
+- `ultrathink` keyword from all subagent prompts (confirmed no-op in subagents via testing)
+
+### Research Findings
+- `ultrathink` in Agent tool prompts does NOT trigger high reasoning — it's a CLI-level keyword only
+- Agent tool does NOT have `effort` parameter — effort controlled via `.md` frontmatter files in `~/.claude/agents/`
+- `codex exec review` cannot combine `--base`/`--uncommitted` with `[PROMPT]` — use stdin for prompt injection
+- Codex `-c model_reasoning_effort` works per-invocation (verified: xhigh=435 tokens vs low=207 tokens output)
+
+## [3.0.0] - 2026-03-23
+
+### Added — Supervisor System (Long-Running Autonomy)
+- **Python supervisor CLI** (`bin/superflow-supervisor`): orchestrates multi-hour autonomous sprint execution. Each sprint runs as a fresh Claude Code session — no context degradation
+- **Sprint Queue** (`lib/queue.py`): DAG-based dependency resolution, atomic file persistence, concurrent-safe with threading.Lock
+- **Checkpoint System** (`lib/checkpoint.py`): crash recovery via per-sprint checkpoints with atomic writes
+- **Parallel Execution** (`lib/parallel.py`): ThreadPoolExecutor for independent sprints with thread-safe queue access
+- **Adaptive Replanner** (`lib/replanner.py`): LLM-powered replanning after each sprint — adjusts remaining work based on what was learned
+- **Telegram Notifications** (`lib/notifications.py`): 11 event types (start, complete, fail, retry, skip, block, timeout, replan, resume, all_done, preflight) with phone-friendly formatting
+- **Prompt Templates** (`templates/`): supervisor-sprint-prompt.md and replan-prompt.md for supervised Claude sessions
+- **Example queue file** (`examples/sprint-queue-example.json`): template for new users
+- **149 tests**: unit tests for all modules + integration tests for happy path, crash recovery, blocked sprints, retry scenarios
+- **CLI commands**: `run`, `status`, `resume`, `reset` with Telegram integration and adaptive replanning
+
+### Added — Process Improvements
+- **Final Holistic Review** (Phase 2): mandatory full-system review after all sprints — catches cross-module issues that per-sprint PAR misses. Two Opus reviewers (Technical + Product) review ALL code together
+- **Breakage Scenario requirement**: every review finding must include a concrete, realistic scenario where the issue causes a real problem. No scenario = not a finding. Prevents over-engineering fixes
+- **Enforcement rule 9**: holistic review mandatory, with rationalization prevention
+
+### Changed
+- **Project architecture**: evolved from pure Markdown skill to hybrid (Markdown prompts + Python companion CLI)
+- **Phase 0**: added python3 availability check for supervisor features
+- **Phase 2**: added supervisor mode documentation, Final Holistic Review step, breakage scenario test in NEEDS_FIXES handling
+- **SKILL.md**: added supervisor detection to startup checklist
+- **Env handling**: deny-list approach (block known sensitive keys) instead of whitelist
+- **Signal handling**: SIGTERM/SIGINT graceful shutdown with threading.Event
+- **All reviewer prompts**: breakage scenario required for every finding
+
+### Fixed (from Final Holistic Review)
+- Race condition in parallel mode: queue_lock now passed through _attempt_sprint
+- Notification method wiring: correct API calls (notify_sprint_complete vs notify_completed)
+- Resume logic: PR existence alone is sufficient for marking completed (worktree may be cleaned up)
+- Template substitution: str.replace() instead of str.format() (JSON braces in templates)
+- Repo root detection: git rev-parse --show-toplevel with fallback
+- Replanner guards: skip/modify only for pending sprints
+- Checkpoint atomic writes: tmp+rename pattern matching queue.py
+- JSON parser: ANSI escape stripping, scans last 5 lines
+- Plan section extraction: exact heading match (prevents "sprint 1" matching "sprint 12")
+
 ## [2.1.2] - 2026-03-23
 
 ### Changed
